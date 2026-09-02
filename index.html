@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Math — Checkers</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.sec-title{font-size:.74rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.hub-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;text-decoration:none;color:var(--text);display:block;transition:transform .15s,box-shadow .15s,border-color .15s}
+.hub-card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.18);border-color:var(--accent)}
+.hub-card .tag{font-family:'JetBrains Mono',monospace;font-size:.64rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.07em}
+.hub-card h3{font-size:1rem;font-weight:700;margin:6px 0 5px}
+.hub-card p{font-size:.83rem;color:var(--muted);line-height:1.5;margin:0}
+.hub-soon{opacity:.45;pointer-events:none}
+.hub-soon .tag{color:var(--muted)}
+.hub-ext .tag{color:var(--inv)}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-left"><h1>Financial Math</h1><div class="sub">Checkers &amp; Tools</div></div>
+</header>
+
+<!-- Static hub. To activate a card: drop the `hub-soon` class and set its href. No JS needed.
+     `hub-ext` marks a card that leaves this repo (walkthroughs, Apps Script). -->
+<main class="main">
+
+  <div class="sec-title">Tools</div>
+  <div class="hub-grid">
+    <a class="hub-card hub-ext" href="https://sensei-nikku.github.io/fm-walkthroughs/">
+      <div class="tag">Spreadsheets</div><h3>Spreadsheet Walkthroughs</h3>
+      <p>Guided, self-checking builds in a real grid &mdash; formulas required, one step gated behind the last.</p>
+    </a>
+    <a class="hub-card hub-soon" href="#">
+      <div class="tag">Sim &middot; paste URL</div><h3>The Long Run</h3>
+      <p>Twenty years of Save / Trade decisions. Apps Script web app &mdash; drop the <code>/exec</code> URL in this href.</p>
+    </a>
+    <a class="hub-card hub-soon" href="#">
+      <div class="tag">Demo &middot; soon</div><h3>Checker Primitives</h3>
+      <p>Port <code>js/checker-kit.js</code> and the <code>tool-*.js</code> files from the geometry repo, then wire a demo page.</p>
+    </a>
+  </div>
+
+  <div class="sec-title">Unit 1 &mdash; Banking &amp; Taxes</div>
+  <div class="hub-grid">
+    <a class="hub-card hub-soon" href="#"><div class="tag">U1 &middot; D1 &middot; soon</div><h3>Intro to Banking</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U1 &middot; D2 &middot; soon</div><h3>Checking &amp; Fees</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U1 &middot; D3 &middot; soon</div><h3>Savings Accounts</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U1 &middot; D4 &middot; soon</div><h3>Taxes &amp; Take-Home Pay</h3></a>
+  </div>
+
+  <div class="sec-title">Unit 2 &mdash; Insurance &amp; Debt</div>
+  <div class="hub-grid">
+    <a class="hub-card hub-soon" href="#"><div class="tag">U2 &middot; D1 &middot; soon</div><h3>Insurance 101</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U2 &middot; D2 &middot; soon</div><h3>Auto &amp; Renters</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U2 &middot; D3 &middot; soon</div><h3>Health Insurance</h3>
+      <p>Deductible &rarr; coinsurance &rarr; out-of-pocket max. Good candidate for a numeric checker.</p></a>
+    <a class="hub-card hub-ext" href="https://sensei-nikku.github.io/fm-walkthroughs/?lesson=u2d3">
+      <div class="tag">U2 &middot; Debt</div><h3>Jordan&rsquo;s Payoff Network</h3>
+      <p>Build four debts as a network, write it as a matrix, square it to find where the money goes two payoffs out.</p></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U2 &middot; Exam &middot; soon</div><h3>Credit Report &amp; Credit Score</h3>
+      <p>Self-checking quiz exists at <code>fm-walkthroughs/credit-quiz.html</code> &mdash; confirm the deployed URL, then point this card at it.</p></a>
+  </div>
+
+  <div class="sec-title">Unit 3 &mdash; Savings &amp; Investing</div>
+  <div class="hub-grid">
+    <a class="hub-card hub-ext" href="https://sensei-nikku.github.io/fm-walkthroughs/?lesson=u3d1">
+      <div class="tag">U3 &middot; D1</div><h3>Why Start Early?</h3>
+      <p>Two people, same rate, different start dates. The one who invests a third as much finishes ahead.</p></a>
+    <a class="hub-card hub-ext" href="https://sensei-nikku.github.io/fm-walkthroughs/?lesson=u3d2">
+      <div class="tag">U3 &middot; D2</div><h3>What a Share Is Worth</h3>
+      <p>IPO price, slice of ownership, dividend vs. capital gain, total return, market cap.</p></a>
+    <a class="hub-card hub-ext" href="https://sensei-nikku.github.io/fm-walkthroughs/?lesson=u3d3">
+      <div class="tag">U3 &middot; D3</div><h3>Three Portfolios, Same Money</h3>
+      <p>One stock, a 60/40 mix, a broad index. Same years. The best average return ends with the least money.</p></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U3 &middot; D4 &middot; soon</div><h3>Managing Risk &amp; Retirement</h3>
+      <p>Analog roundtable this term &mdash; no checker planned.</p></a>
+  </div>
+
+  <div class="sec-title">Unit 4 &mdash; Budgeting &amp; Reality Check</div>
+  <div class="hub-grid">
+    <a class="hub-card hub-soon" href="#"><div class="tag">U4 &middot; D1 &middot; soon</div><h3>Budgeting Basics</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U4 &middot; D2 &middot; soon</div><h3>Housing</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U4 &middot; D3 &middot; soon</div><h3>Transportation</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">U4 &middot; D4 &middot; soon</div><h3>Food &amp; Living</h3></a>
+  </div>
+
+  <div class="sec-title">Reality Check &mdash; Digital Helpers</div>
+  <div class="hub-grid">
+    <a class="hub-card hub-soon" href="#"><div class="tag">Helper &middot; soon</div><h3>Transport Path Picker</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">Helper &middot; soon</div><h3>Income Gate Checker</h3></a>
+    <a class="hub-card hub-soon" href="#"><div class="tag">Helper &middot; soon</div><h3>Savings Floor Calculator</h3></a>
+  </div>
+
+</main>
+</body>
+</html>
