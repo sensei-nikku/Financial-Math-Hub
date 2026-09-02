@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Payoff Network — Financial Math</title>
+<title>Financial Math — Spreadsheet Walkthrough</title>
 <style>
 /* ---------------------------------------------------------------
    Palette carried over from the printed packets so the screen and
@@ -304,7 +304,34 @@ td.err{background:var(--warn-soft);color:var(--warn)}
 
 <script type="module">
 import { Sheet, colName, rcToRef, refToRC, referencedCells } from './engine.js';
-import { lesson } from './lesson-u2d3.js';
+
+/* ---- lesson routing ----------------------------------------------
+   Static imports on purpose: a missing file fails loudly at load rather
+   than quietly drawing nothing. Add a lesson with one import line and
+   one entry in LESSONS. Choose with ?lesson=u3d3 ; the bare URL serves
+   DEFAULT_LESSON.
+------------------------------------------------------------------- */
+import { lesson as u2d3 } from './lesson-u2d3.js';
+import { lesson as u3d1 } from './lesson-u3d1.js';
+import { lesson as u3d2 } from './lesson-u3d2.js';
+import { lesson as u3d3 } from './lesson-u3d3.js';
+
+const LESSONS = { u2d3, u3d1, u3d2, u3d3 };
+const DEFAULT_LESSON = 'u3d3';
+
+const wanted = (new URLSearchParams(location.search).get('lesson') || DEFAULT_LESSON)
+  .toLowerCase().replace(/[^a-z0-9-]/g, '');
+const lesson = LESSONS[wanted];
+
+if (!lesson) {
+  document.body.innerHTML =
+    '<div style="padding:2rem;font:16px/1.6 system-ui;max-width:34rem;margin:0 auto">' +
+    '<h2>No walkthrough named &ldquo;' + wanted + '&rdquo;</h2>' +
+    '<p>Available: ' + Object.keys(LESSONS).join(', ') + '</p>' +
+    '<p><a href="?lesson=' + DEFAULT_LESSON + '">Open ' + DEFAULT_LESSON + '</a></p></div>';
+  throw new Error('Unknown lesson: ' + wanted);
+}
+document.title = lesson.title + ' \u2014 Financial Math';
 
 const sheet = new Sheet(lesson.rows, lesson.cols);
 const given = new Set(Object.keys(lesson.given));
@@ -635,6 +662,30 @@ function drawSteps() {
 drawSteps();
 select('E4');
 setMode('nav');
+</script>
+
+<!-- Diagnostic. A <script type="module"> that fails to load its imports
+     dies silently as far as the page is concerned: you get a blue bar and
+     two empty panes. This classic script is unaffected by that failure,
+     so it can notice the grid never drew and say what is missing. -->
+<script>
+setTimeout(function () {
+  var g = document.getElementById('grid');
+  if (g && g.rows.length) return;                 // it rendered, nothing to do
+  if (!document.getElementById('steps')) return;  // error page already shown
+  document.body.innerHTML =
+    '<div style="padding:2rem;font:16px/1.65 system-ui;max-width:38rem;margin:0 auto;color:#1B3A5C">' +
+    '<h2 style="margin:0 0 .6rem">The walkthrough did not load</h2>' +
+    '<p style="margin:0 0 1rem">The page is here, but the script could not start. ' +
+    'Almost always this means a file is missing from the folder, or one of them ' +
+    'was uploaded with the wrong name.</p>' +
+    '<p style="margin:0 0 .4rem"><b>Every one of these must sit next to index.html:</b></p>' +
+    '<ul style="margin:0 0 1rem 1.1rem"><li><code>engine.js</code></li>' +
+    '<li><code>lesson-u2d3.js</code></li><li><code>lesson-u3d1.js</code></li>' +
+    '<li><code>lesson-u3d2.js</code></li><li><code>lesson-u3d3.js</code></li></ul>' +
+    '<p style="margin:0;color:#5A6B7C;font-size:14px">Press F12 and open the Console tab ' +
+    'for the exact filename it could not find.</p></div>';
+}, 1500);
 </script>
 </body>
 </html>
