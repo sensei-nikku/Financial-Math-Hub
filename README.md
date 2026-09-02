@@ -16,6 +16,7 @@ framework, no JS on `index.html`.
 | `lesson-u2d3.js`, `lesson-u3d1.js`, `lesson-u3d2.js`, `lesson-u3d3.js` | one per walkthrough |
 | `checkers/unit3-day3-bonds.html` | bond + fund-fee checker |
 | `checkers/unit3-day3-selfcheck.html` | offline Day 3 self check, no dependencies |
+| `checkers/_archive/` | superseded checkers, kept for history. Needs `.nojekyll` to be served at all |
 | `js/` | checker kit ported from the geometry repo, plus `tool-money.js` |
 | `tests/money.test.js` | 76 assertions |
 | `assets/styles.css` | hub stylesheet |
@@ -71,6 +72,10 @@ build **fails outright** if any file contains Liquid syntax (`{{` or `{%`) —
 the checker kit in `js/` is the likely future trigger. A failed build keeps
 serving the previous version silently, which is indistinguishable from a cache
 problem.
+
+It is also load-bearing now: Jekyll hides paths beginning with `_`, and
+`checkers/_archive/` is one. Without `.nojekyll` that directory would not be
+served.
 
 It cannot be added with GitHub's web uploader, which silently skips dotfiles.
 Use **Add file → Create new file**, type `.nojekyll`, leave the body empty,
@@ -150,9 +155,6 @@ unanswerable.
 4. **More checkers.** Health insurance (deductible → coinsurance → OOP max) is
    the strongest next candidate — it is pure arithmetic with famous
    misconceptions, which is exactly what `traps` are for.
-5. **Decide on `checkers/u3d3-walkthrough.html`** — a self-contained older copy
-   of the u3d3 walkthrough, superseded by `walkthrough.html?lesson=u3d3` and
-   linked from nowhere. Archive or delete it once confirmed.
 
 ## Conventions worth not breaking
 
