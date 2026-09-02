@@ -66,21 +66,60 @@ printed on student handouts pointing at
 paper that is already in a filing cabinet. The `?lesson=` parameter selects the
 lesson, so one deployment serves every day.
 
+## The kit
+
+Ported from the geometry repo and working: `checker-kit.js` (the runner, plus
+the `numeric` and `choice` primitives), `tool-solve`, `tool-explain`,
+`tool-order`, `tool-match`, `tool-label`, `tool-plot`. The geometry figure
+renderers were deliberately left behind.
+
+Written for FM, in `js/tool-money.js`:
+
+- **`currency`** — `$1,200`, `1200`, `1,200.00`, `(1,200)` for a negative, all
+  the same answer. Graded to the cent. Anything unparseable is a *soft* miss so
+  a typo never counts toward the teacher redirect.
+- **`percent`** — `5%`, `5` and `0.05` all pass for an answer of `0.05`. Both
+  readings are tested, so there is no format to guess. Answers are stored as
+  decimals. The one casualty is a bare `1` meaning 1%, which reads as 100% —
+  the field tells students to use the `%` sign below 1%.
+
+Both take a `traps` array so a known misconception gets named instead of a
+generic "not quite":
+
+```js
+{ tool:'percent', answer:0.05,
+  traps:[{ near:0.04, msg:'That is the coupon rate on the original $5,000.' }] }
+```
+
+Three misses on any step triggers the kit's teacher redirect — *"bring your work
+to your teacher"* — with a "teacher helped, continue" button. That is the whole
+reason this beats a worksheet: it routes a stuck student to a person instead of
+letting them guess.
+
+## Tests
+
+```
+npm install
+node tests/money.test.js
+```
+
+76 assertions: money parsing across every format a student types, acceptance and
+rejection driven through the real runner, and a validation pass over the Day 3
+answer key — arithmetic derived from the source numbers rather than retyped,
+every trap checked for collision with its own answer, and every choice hash
+confirmed to resolve to exactly one option. That last check caught two hashes
+computed from shell-escaped strings, which would have made two questions
+unanswerable.
+
 ## Still to do
 
-1. **Port the checker kit.** Copy from the geometry repo:
-   `js/checker-kit.js`, `js/tool-label.js`, `js/tool-match.js`,
-   `js/tool-order.js`, `js/tool-plot.js`, `js/tool-solve.js`. Leave
-   `js/fig-triangle.js` and `js/fig-orientations.js` behind — those draw
-   geometry figures and have no FM use.
-2. **Build the FM primitives the kit is missing.** Money-specific checking:
-   a currency input that accepts `$1,200`, `1200`, and `1,200.00` as the same
-   answer; a percent input that accepts `7%` and `0.07`; and a
-   tolerance-to-the-cent numeric so rounding differences don't read as wrong.
-3. **Wire `demo.html`** once the kit is in, same as the geometry repo — every
-   primitive on one page so a checker can be assembled by copying markup.
-4. **Confirm the credit quiz URL** and point the Unit 2 exam card at it.
-5. **Paste The Long Run's `/exec` URL** into the sim card.
+1. **Wire `demo.html`** — every primitive on one page, same as the geometry
+   repo, so a new checker can be assembled by copying markup.
+2. **Confirm the credit quiz URL** and point the Unit 2 exam card at it.
+3. **Paste The Long Run's `/exec` URL** into the sim card.
+4. **More checkers.** Health insurance (deductible → coinsurance → OOP max) is
+   the strongest next candidate — it is pure arithmetic with famous
+   misconceptions, which is exactly what `traps` are for.
 
 ## Conventions worth not breaking
 
