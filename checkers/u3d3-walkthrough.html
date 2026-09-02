@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>U3 D3 — Three Portfolios, Same Money</title>
+<style>
+/* ---------------------------------------------------------------
+   Palette carried over from the printed packets so the screen and
+   the paper read as one course: ledger ink, cell yellow, rule grey.
+   --------------------------------------------------------------- */
+:root{
+  --ink:#1B3A5C;          /* packet blue  */
+  --ink-deep:#12283F;
+  --accent:#E87722;       /* packet orange */
+  --cell:#FFF2CC;         /* packet cell yellow */
+  --rule:#B8C4D0;
+  --paper:#FBFAF7;
+  --paper-2:#F1EEE7;
+  --ok:#2F6B4F;
+  --ok-soft:#E4F0E9;
+  --warn:#9B3B22;
+  --warn-soft:#FBE9E2;
+  --muted:#6C7A88;
+
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--sans);
+  background:var(--paper-2);
+  color:var(--ink-deep);
+  font-size:15px;
+  line-height:1.5;
+  /* Column flex instead of a hardcoded header height. The old rule was
+     main{height:calc(100% - 62px)}, which silently breaks the moment the
+     masthead renders any taller than 62px -- a wrapped title, a zoom
+     level, a different font. When it breaks, the panes stop scrolling
+     internally and the whole PAGE scrolls, which drags the formula bar
+     off the top of the screen. That is the bug students hit. */
+  display:flex;
+  flex-direction:column;
+}
+header{flex:0 0 auto}
+button{font:inherit}
+
+/* ---------- masthead ---------- */
+header{
+  background:var(--ink);
+  color:#fff;
+  padding:14px 22px;
+  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  border-bottom:3px solid var(--accent);
+}
+header .unit{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:#9FC0DC;
+}
+header h1{
+  font-family:var(--serif);font-weight:600;font-size:22px;margin:0;
+  letter-spacing:-.01em;
+}
+header .count{margin-left:auto;font-family:var(--mono);font-size:12px;color:#9FC0DC}
+
+/* ---------- layout ---------- */
+main{
+  flex:1 1 auto;
+  min-height:0;          /* without this a flex child refuses to shrink,
+                            and its children never get a scrollbar */
+  display:grid;
+  /* instructions left, sheet right. Wider instruction column than the
+     original: the step bodies now carry the WANT/HAVE/CONNECT/SHAPE
+     reasoning, which needs room to breathe. */
+  grid-template-columns:minmax(360px,46%) 1fr;
+  gap:0;
+}
+@media (max-width:1100px){
+  main{grid-template-columns:minmax(320px,44%) 1fr}
+}
+/* Only stack when there is genuinely no room for two columns. */
+@media (max-width:720px){
+  main{grid-template-columns:1fr;height:auto}
+  #sheetpane{border-left:none;border-top:1px solid var(--rule)}
+  /* Bounding the grid restores internal scrolling, which is what makes
+     the sticky column headers and the sticky formula bar work on a
+     phone the same way they do on a laptop. */
+  #gridwrap{max-height:60vh;padding:10px}
+  /* Fingers are not mouse pointers. */
+  th,td{height:36px}
+  td{padding:6px 9px;font-size:14px}
+  th.rowhead{min-width:34px;max-width:34px}
+}
+
+/* ---------- steps ---------- */
+#steps{
+  background:var(--paper);
+  min-height:0;
+  overflow-y:auto;
+  padding:22px 22px 60px;
+  border-right:1px solid var(--rule);
+}
+/* Step bodies carry literal newlines between the four questions, so keep
+   them instead of collapsing the whitespace. */
+.step .body{white-space:pre-line}
+/* The deliverable. Reasoning fades across the lesson; this never does.
+   Students reported the late steps as unclear -- not because the thinking
+   was too hard, but because "what do I actually type, and where" had been
+   faded away along with the scaffolding. Different things. */
+.step .do{
+  margin:12px 0 0;padding:9px 12px;
+  background:var(--paper-2);border-left:3px solid var(--accent);
+  border-radius:0 4px 4px 0;
+  font-size:13.5px;line-height:1.5;color:var(--ink-deep);
+}
+.step .do b{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.step .do .tag{
+  display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:3px;font-weight:700;
+}
+.blurb{
+  font-family:var(--serif);font-size:16px;line-height:1.55;
+  color:#33475A;margin:0 0 22px;padding-bottom:18px;
+  border-bottom:1px solid var(--rule);
+}
+.step{
+  border-left:2px solid var(--rule);
+  padding:0 0 22px 16px;margin-left:6px;position:relative;
+}
+.step.done{border-left-color:var(--ok)}
+.step.current{border-left-color:var(--accent)}
+.step .n{
+  position:absolute;left:-13px;top:0;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule);
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  display:grid;place-items:center;color:var(--muted);
+}
+.step.current .n{border-color:var(--accent);color:var(--accent)}
+.step.done .n{border-color:var(--ok);background:var(--ok);color:#fff}
+.step h3{
+  font-family:var(--serif);font-size:17px;font-weight:600;
+  margin:0 0 6px;color:var(--ink);
+}
+.step p{margin:0 0 10px}
+.step.locked{opacity:.4}
+.step.locked p,.step.locked .row,.step.locked .note{display:none}
+.step .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.note{
+  margin-top:12px;padding:10px 12px;background:var(--ok-soft);
+  border-left:3px solid var(--ok);font-size:14px;color:#204835;
+}
+.hint{
+  margin-top:10px;padding:10px 12px;background:var(--cell);
+  border-left:3px solid var(--accent);font-size:14px;
+}
+.fail{
+  margin-top:10px;padding:10px 12px;background:var(--warn-soft);
+  border-left:3px solid var(--warn);font-size:14px;color:var(--warn);
+}
+.fail ul{margin:6px 0 0;padding-left:18px}
+code,kbd{font-family:var(--mono);font-size:.92em;background:var(--paper-2);
+  padding:1px 5px;border:1px solid var(--rule);border-radius:3px}
+
+/* ---------- buttons ---------- */
+.btn{
+  border:1px solid var(--ink);background:var(--ink);color:#fff;
+  padding:7px 16px;border-radius:3px;cursor:pointer;
+  font-size:14px;font-weight:600;
+}
+.btn:hover{background:var(--ink-deep)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.ghost:hover{background:var(--paper-2)}
+.btn:focus-visible,td:focus-visible,input:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- sheet ---------- */
+#sheetpane{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--paper-2)}
+#formulabar{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--paper);border-bottom:1px solid var(--rule);
+  /* Sticky in every layout. On desktop the grid scrolls inside its own
+     pane so this never moves anyway; on a phone the whole page scrolls
+     and without this the formula bar disappears the moment you scroll
+     down the sheet. */
+  position:sticky;top:0;z-index:6;
+  box-shadow:0 1px 0 var(--rule);
+}
+#addr{
+  font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);
+  padding:9px 14px;min-width:72px;border-right:1px solid var(--rule);
+  display:flex;align-items:center;
+}
+#fx{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  padding:9px 10px;border-right:1px solid var(--rule);
+  display:flex;align-items:center;
+}
+#input{
+  flex:1;border:0;padding:9px 12px;font-family:var(--mono);font-size:14px;
+  background:transparent;color:var(--ink-deep);min-width:0;
+}
+#gridwrap{overflow:auto;padding:16px;flex:1 1 auto;min-height:0}
+table{border-collapse:separate;border-spacing:0;background:var(--paper);
+  box-shadow:0 1px 0 var(--rule),0 1px 8px rgba(27,58,92,.06)}
+th,td{
+  border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  padding:0;height:27px;min-width:92px;max-width:92px;
+  font-family:var(--mono);font-size:13px;
+}
+th{
+  background:var(--paper-2);color:var(--muted);font-weight:600;font-size:11px;
+  text-align:center;position:sticky;top:0;z-index:2;
+  border-top:1px solid var(--rule);
+}
+th.corner{position:sticky;left:0;z-index:3}
+th.rowhead{
+  position:sticky;left:0;z-index:1;min-width:36px;max-width:36px;
+  border-left:1px solid var(--rule);
+}
+td{
+  padding:3px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:cell;background:var(--paper);
+  touch-action:manipulation;      /* kills the 300ms tap delay */
+  -webkit-tap-highlight-color:transparent;
+}
+/* While you are mid-formula, every cell you could point at lights up,
+   so it is obvious that tapping inserts a reference instead of moving. */
+#sheetpane.picking td:not(.given){cursor:copy;background:#FAFCFE}
+#sheetpane.picking td:not(.given):hover{background:var(--accent-wash,#EAF3FA)}
+td.num{text-align:right}
+td.given{background:var(--paper-2);color:#3C4C5C;cursor:default}
+td.label{text-align:left;color:var(--ink);font-family:var(--sans);font-size:12.5px}
+td.head{font-weight:700;color:var(--ink)}
+td.sel{outline:2px solid var(--ink);outline-offset:-2px;background:#fff;
+  position:relative;z-index:1}
+#sheetpane.nav td.sel{outline-color:var(--accent);outline-width:3px}
+#gridwrap{outline:none}
+#gridwrap:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
+#keys{
+  display:flex;flex-wrap:wrap;gap:14px;padding:7px 16px;
+  border-top:1px solid var(--rule);background:var(--paper-2);
+  font-size:11.5px;color:var(--muted);
+}
+#keys kbd{
+  font-family:var(--mono);font-size:10.5px;background:var(--paper);
+  border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;
+  padding:1px 5px;margin-right:3px;color:var(--ink);
+}
+td.lit{background:var(--cell)}
+td.target{box-shadow:inset 0 0 0 1px var(--accent)}
+td.solved{background:var(--ok-soft);color:#204835}
+td.err{background:var(--warn-soft);color:var(--warn)}
+#msg{
+  padding:8px 16px;font-size:13px;min-height:34px;
+  border-top:1px solid var(--rule);background:var(--paper);
+  font-family:var(--mono);color:var(--muted);
+}
+#msg.bad{color:var(--warn)}
+#done{
+  margin:22px 0 0;padding:18px;background:var(--ink);color:#fff;border-radius:4px;
+}
+#done h3{font-family:var(--serif);margin:0 0 8px;font-size:19px}
+#done p{margin:0;color:#CFE0EE;font-size:14px}
+@media (prefers-reduced-motion:no-preference){
+  .step{transition:border-color .2s} td{transition:background .12s}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="unit" id="h-unit"></span>
+  <h1 id="h-title"></h1>
+  <span class="count" id="h-count"></span>
+</header>
+
+<main>
+  <section id="steps" aria-label="Steps"></section>
+
+  <section id="sheetpane">
+    <div id="formulabar">
+      <span id="addr">A1</span>
+      <span id="fx">fx</span>
+      <input id="input" autocomplete="off" spellcheck="false"
+             autocapitalize="off" autocorrect="off"
+             aria-label="Cell contents. Start with = to write a formula.">
+    </div>
+    <div id="gridwrap" tabindex="0" role="grid" aria-label="Spreadsheet. Arrow keys move between cells. Type to edit."><table id="grid"></table></div>
+    <div id="msg"></div>
+    <div id="keys">
+      <span><kbd>&larr;&uarr;&darr;&rarr;</kbd> move</span>
+      <span><kbd>Enter</kbd> edit, then move down</span>
+      <span><kbd>Tab</kbd> move right</span>
+      <span><kbd>Esc</kbd> cancel</span>
+      <span><kbd>Delete</kbd> clear</span>
+      <span>type <kbd>=</kbd> to start a formula</span>
+      <span>mid-formula, <kbd>click a cell</kbd> to drop in its reference</span>
+    </div>
+  </section>
+</main>
+
+<script>
+/* SELF-CONTAINED BUILD — U3 D3. Engine + shell + lesson inlined. */
+/* =====================================================================
+   sheet engine — a small, honest spreadsheet
+   Formula syntax is deliberately identical to Google Sheets and Excel so
+   that everything learned here transfers. Supports: cell refs (A1, $B$2),
+   ranges (B11:E11), + - * / ^ and comparisons, parentheses, and the
+   functions listed in FUNCS below.
+   ===================================================================== */
+
+const colName = (i) => {
+  let s = '';
+  i += 1;
+  while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = (i - r - 1) / 26; }
+  return s;
+};
+const colIndex = (s) => {
+  let n = 0;
+  for (const ch of s.toUpperCase()) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+};
+const refToRC = (ref) => {
+  const m = /^\$?([A-Za-z]+)\$?(\d+)$/.exec(ref);
+  if (!m) return null;
+  return { c: colIndex(m[1]), r: parseInt(m[2], 10) - 1 };
+};
+const rcToRef = (r, c) => colName(c) + (r + 1);
+
+/* ---------- tokenizer ---------- */
+function tokenize(src) {
+  const t = [];
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (/[0-9.]/.test(ch)) {
+      let j = i; while (j < src.length && /[0-9.]/.test(src[j])) j++;
+      t.push({ k: 'num', v: parseFloat(src.slice(i, j)) }); i = j; continue;
+    }
+    if (ch === '"') {
+      let j = i + 1, s = '';
+      while (j < src.length && src[j] !== '"') { s += src[j]; j++; }
+      t.push({ k: 'str', v: s }); i = j + 1; continue;
+    }
+    if (/[A-Za-z$]/.test(ch)) {
+      let j = i; while (j < src.length && /[A-Za-z0-9$_.]/.test(src[j])) j++;
+      const word = src.slice(i, j);
+      if (src[j] === '(') { t.push({ k: 'fn', v: word.toUpperCase() }); i = j; continue; }
+      if (src[j] === ':' && /^\$?[A-Za-z]+\$?\d+$/.test(word)) {
+        let k2 = j + 1; while (k2 < src.length && /[A-Za-z0-9$]/.test(src[k2])) k2++;
+        t.push({ k: 'range', v: [word, src.slice(j + 1, k2)] }); i = k2; continue;
+      }
+      if (/^\$?[A-Za-z]+\$?\d+$/.test(word)) { t.push({ k: 'ref', v: word }); i = j; continue; }
+      t.push({ k: 'name', v: word.toUpperCase() }); i = j; continue;
+    }
+    const two = src.slice(i, i + 2);
+    if (['<=', '>=', '<>'].includes(two)) { t.push({ k: 'op', v: two }); i += 2; continue; }
+    if ('+-*/^(),<>='.includes(ch)) { t.push({ k: 'op', v: ch }); i++; continue; }
+    throw new Error(`Unexpected character "${ch}"`);
+  }
+  return t;
+}
+
+/* ---------- parser (recursive descent) ---------- */
+function parse(tokens) {
+  let p = 0;
+  const peek = () => tokens[p];
+  const eat = (v) => {
+    const t = tokens[p];
+    if (!t || (v && t.v !== v)) throw new Error(v ? `Expected "${v}"` : 'Unexpected end of formula');
+    p++; return t;
+  };
+  function primary() {
+    const t = peek();
+    if (!t) throw new Error('Formula ends too early');
+    if (t.k === 'num' || t.k === 'str') { p++; return { n: 'lit', v: t.v }; }
+    if (t.k === 'ref') { p++; return { n: 'ref', v: t.v }; }
+    if (t.k === 'range') { p++; return { n: 'range', v: t.v }; }
+    if (t.k === 'name') {
+      p++;
+      if (t.v === 'TRUE') return { n: 'lit', v: true };
+      if (t.v === 'FALSE') return { n: 'lit', v: false };
+      throw new Error(`Unknown name "${t.v}"`);
+    }
+    if (t.k === 'fn') {
+      p++; eat('(');
+      const args = [];
+      if (peek() && peek().v !== ')') {
+        args.push(expr());
+        while (peek() && peek().v === ',') { p++; args.push(expr()); }
+      }
+      eat(')');
+      return { n: 'call', f: t.v, args };
+    }
+    if (t.v === '(') { p++; const e = expr(); eat(')'); return e; }
+    if (t.v === '-') { p++; return { n: 'neg', a: primary() }; }
+    if (t.v === '+') { p++; return primary(); }
+    throw new Error(`Unexpected "${t.v}"`);
+  }
+  function power() {
+    let l = primary();
+    while (peek() && peek().v === '^') { p++; l = { n: 'bin', o: '^', l, r: primary() }; }
+    return l;
+  }
+  function term() {
+    let l = power();
+    while (peek() && (peek().v === '*' || peek().v === '/')) {
+      const o = eat().v; l = { n: 'bin', o, l, r: power() };
+    }
+    return l;
+  }
+  function add() {
+    let l = term();
+    while (peek() && (peek().v === '+' || peek().v === '-')) {
+      const o = eat().v; l = { n: 'bin', o, l, r: term() };
+    }
+    return l;
+  }
+  function expr() {
+    let l = add();
+    while (peek() && ['<', '>', '=', '<=', '>=', '<>'].includes(peek().v)) {
+      const o = eat().v; l = { n: 'bin', o, l, r: add() };
+    }
+    return l;
+  }
+  const out = expr();
+  if (p < tokens.length) throw new Error('Extra text after the formula');
+  return out;
+}
+
+/* ---------- functions ---------- */
+const flat = (vals) => vals.flat(Infinity);
+const nums = (vals) => flat(vals).filter((v) => typeof v === 'number' && isFinite(v));
+
+const FUNCS = {
+  SUM: (a) => nums(a).reduce((x, y) => x + y, 0),
+  COUNT: (a) => nums(a).length,
+  AVERAGE: (a) => { const n = nums(a); if (!n.length) throw new Error('AVERAGE needs numbers'); return n.reduce((x, y) => x + y, 0) / n.length; },
+  MIN: (a) => { const n = nums(a); if (!n.length) throw new Error('MIN needs numbers'); return Math.min(...n); },
+  MAX: (a) => { const n = nums(a); if (!n.length) throw new Error('MAX needs numbers'); return Math.max(...n); },
+  ABS: (a) => Math.abs(nums(a)[0]),
+  ROUND: (a) => { const f = flat(a); const d = f.length > 1 ? f[1] : 0; const m = Math.pow(10, d); return Math.round(f[0] * m) / m; },
+  IF: (a) => (a[0] ? (a.length > 1 ? a[1] : true) : (a.length > 2 ? a[2] : false)),
+  SUMPRODUCT: (a) => {
+    const arrs = a.map((x) => flat([x]));
+    const len = arrs[0].length;
+    if (arrs.some((x) => x.length !== len)) throw new Error('SUMPRODUCT ranges must be the same size');
+    let s = 0;
+    for (let i = 0; i < len; i++) {
+      let pr = 1;
+      for (const arr of arrs) pr *= (typeof arr[i] === 'number' ? arr[i] : 0);
+      s += pr;
+    }
+    return s;
+  },
+};
+
+/* ---------- sheet ---------- */
+class Sheet {
+  constructor(rows, cols) {
+    this.rows = rows; this.cols = cols;
+    this.raw = new Map();      // "A1" -> raw string
+    this.cache = new Map();    // "A1" -> computed value
+    this.errors = new Map();
+  }
+  setRaw(ref, text) { 
+    if (text === '' || text == null) this.raw.delete(ref); else this.raw.set(ref, text);
+    this.recalc();
+  }
+  getRaw(ref) { return this.raw.get(ref) ?? ''; }
+  isFormula(ref) { return String(this.getRaw(ref)).trim().startsWith('='); }
+
+  recalc() {
+    this.cache.clear(); this.errors.clear();
+    for (const ref of this.raw.keys()) {
+      try { this.value(ref, new Set()); }
+      catch (e) { this.errors.set(ref, e.message); this.cache.set(ref, NaN); }
+    }
+  }
+
+  value(ref, seen = new Set()) {
+    if (this.cache.has(ref)) return this.cache.get(ref);
+    const raw = this.raw.get(ref);
+    if (raw === undefined || raw === '') return 0;
+    // Throw rather than return: returning NaN lets the caller's success path
+    // clear the error we just recorded, so the cycle goes unreported.
+    if (seen.has(ref)) throw new Error('Circular reference');
+    const s = String(raw).trim();
+    if (!s.startsWith('=')) {
+      const n = Number(s.replace(/[$,%\s]/g, ''));
+      const v = (s !== '' && isFinite(n) && /[0-9]/.test(s)) ? n : s;
+      this.cache.set(ref, v); return v;
+    }
+    seen.add(ref);
+    let v;
+    try {
+      v = this.evalNode(parse(tokenize(s.slice(1))), seen);
+      this.errors.delete(ref);
+    } catch (e) {
+      this.errors.set(ref, e.message); v = NaN;
+    }
+    seen.delete(ref);
+    this.cache.set(ref, v); return v;
+  }
+
+  rangeRefs(a, b) {
+    const A = refToRC(a), B = refToRC(b);
+    if (!A || !B) throw new Error('Bad range');
+    const out = [];
+    for (let r = Math.min(A.r, B.r); r <= Math.max(A.r, B.r); r++)
+      for (let c = Math.min(A.c, B.c); c <= Math.max(A.c, B.c); c++)
+        out.push(rcToRef(r, c));
+    return out;
+  }
+
+  evalNode(node, seen) {
+    switch (node.n) {
+      case 'lit': return node.v;
+      case 'neg': return -this.evalNode(node.a, seen);
+      case 'ref': {
+        const rc = refToRC(node.v);
+        if (!rc) throw new Error(`Bad cell reference "${node.v}"`);
+        return this.value(rcToRef(rc.r, rc.c), seen);
+      }
+      case 'range': return this.rangeRefs(node.v[0], node.v[1]).map((r) => this.value(r, seen));
+      case 'call': {
+        const f = FUNCS[node.f];
+        if (!f) throw new Error(`${node.f} is not available here`);
+        return f(node.args.map((a) => this.evalNode(a, seen)));
+      }
+      case 'bin': {
+        const l = this.evalNode(node.l, seen), r = this.evalNode(node.r, seen);
+        const ln = typeof l === 'number' ? l : (l === '' ? 0 : l);
+        const rn = typeof r === 'number' ? r : (r === '' ? 0 : r);
+        switch (node.o) {
+          case '+': return ln + rn; case '-': return ln - rn;
+          case '*': return ln * rn;
+          case '/': if (rn === 0) throw new Error('Division by zero'); return ln / rn;
+          case '^': return Math.pow(ln, rn);
+          case '=': return ln === rn; case '<>': return ln !== rn;
+          case '<': return ln < rn; case '>': return ln > rn;
+          case '<=': return ln <= rn; case '>=': return ln >= rn;
+        }
+        throw new Error(`Unknown operator ${node.o}`);
+      }
+    }
+    throw new Error('Could not read that formula');
+  }
+}
+
+/* Cells and ranges mentioned in a formula — used to light up the grid. */
+function referencedCells(src) {
+  const out = new Set();
+  if (!src || !String(src).trim().startsWith('=')) return out;
+  let toks;
+  try { toks = tokenize(String(src).trim().slice(1)); } catch { return out; }
+  for (const t of toks) {
+    if (t.k === 'ref') { const rc = refToRC(t.v); if (rc) out.add(rcToRef(rc.r, rc.c)); }
+    if (t.k === 'range') {
+      const A = refToRC(t.v[0]), B = refToRC(t.v[1]);
+      if (A && B) for (let r = Math.min(A.r, B.r); r <= Math.max(A.r, B.r); r++)
+        for (let c = Math.min(A.c, B.c); c <= Math.max(A.c, B.c); c++) out.add(rcToRef(r, c));
+    }
+  }
+  return out;
+}
+
+
+/* =====================================================================
+   Unit 3 · Day 3 — Three Portfolios, Same Money
+   v3 — teaches formula CONSTRUCTION, not formula transcription.
+
+   Every step body walks the same four questions instead of dictating a
+   string to retype:
+
+        WANT     what do I want out of this cell?
+        HAVE     what do I already have, and in which cells?
+        CONNECT  what joins them — an operator, or a function?
+        SHAPE    does the answer need rounding to be readable?
+
+   The literal formula lives in `hint`, so a stuck student can still get
+   it, but nobody is handed it before they have made the four decisions.
+   Step 7 makes them choose functions by name from a description, which
+   is the actual skill — knowing MIN exists is useless if you cannot
+   recognise the moment you need it.
+   ===================================================================== */
+
+const lesson = {
+  id: 'u3d3',
+  unit: 'Unit 3 · Day 3',
+  title: 'Three Portfolios, Same Money',
+  blurb: 'Ten thousand dollars, three years, three ways to hold it. Every formula in here you will build yourself, using the same four questions each time: WANT — what do I want out? HAVE — what do I already have, and where? CONNECT — what joins them, an operator or a function? SHAPE — does the answer need rounding? Answer those four and the formula writes itself. The hint button has the finished line if you get stuck.',
+  rows: 45,
+  cols: 4,
+
+  given: {
+    A1: 'DIVERSIFICATION — THREE PORTFOLIOS, SAME MONEY',
+
+    A3: 'WHAT YOU START WITH',
+    A4: 'Invested in each', B4: 10000,
+
+    A6: 'YEARLY RETURNS', B6: 'One stock', C6: '60/40 mix', D6: 'Index fund',
+    A7: 'Year 1', B7: 0.65, C7: 0.18, D7: 0.26,
+    A8: 'Year 2', B8: -0.45, C8: -0.08, D8: -0.12,
+    A9: 'Year 3', B9: 0.30, C9: 0.14, D9: 0.22,
+
+    A11: 'A — ONE YEAR AT A TIME (one stock)',
+    A12: 'Year 1 multiplier',
+    A13: 'Money after year 1',
+    A14: 'Money after year 2',
+    A15: 'Money after year 3',
+
+    A17: 'B — ALL THREE YEARS IN ONE CELL',
+    A18: 'Ending value',
+
+    A20: 'C — NAME THE FUNCTION THAT DOES THE JOB',
+    A21: 'Adds up a list of numbers',
+    A22: 'Gives the mean of a list',
+    A23: 'Gives the smallest in a list',
+    A24: 'Gives the largest in a list',
+
+    A26: 'D — AVERAGE YEARLY RETURN',
+    A27: 'Sum of the three years',
+    A28: 'Average, by dividing',
+    A29: 'Average, using a function',
+
+    A31: 'E — WORST, BEST, AND THE SWING',
+    A32: 'Worst year',
+    A33: 'Best year',
+    A34: 'Swing: best minus worst',
+
+    A36: 'F — THE VERDICT',
+    A37: 'Highest average return?',
+    A38: 'Most money at the end?',
+
+    A40: 'G — FINISH EARLY: make year 2 worse',
+    A41: 'New year 2 for the one stock',
+    A42: 'New ending value',
+    A43: 'Still beat the index fund?',
+  },
+
+  steps: [
+
+    /* ---- A. one year at a time ----------------------------------- */
+    {
+      title: 'A1 · Turn a percent into a multiplier',
+      body: 'First formula, and we will do all four questions out loud.\n\nWANT: a number I can multiply money by, so that +65% happens to it.\nHAVE: the return itself, sitting in B7 as 0.65.\nCONNECT: +65% means the money becomes 165% of what it was, so the multiplier is 1 plus the return. That is addition.\nSHAPE: nothing to shape yet.\n\nEvery formula starts with = so the sheet knows to compute instead of just storing text. Build it in B12.',
+      hint: 'Equals sign, then 1, then a plus, then the cell that holds the return:  =1+B7',
+      do: 'B12 \u2014 one formula. Start it with = so the sheet computes instead of storing text.',
+      targets: [{ cell: 'B12', value: 1.65, mustBeFormula: true }],
+      note: '1.65. Notice you did not type 1.65 anywhere \u2014 you pointed at B7 and let the sheet work it out. That is the difference between a spreadsheet and a calculator, and it is why changing B7 later will move everything downstream on its own.',
+    },
+    {
+      title: 'A2 · One year of growth',
+      body: 'Same four questions, faster.\n\nWANT: the balance after one year.\nHAVE: the starting amount in B4, and the multiplier you just built in B12.\nCONNECT: to grow money by a multiplier you multiply. The symbol is *\nSHAPE: not yet.\n\nWrite it in B13.',
+      hint: '=B4*B12',
+      do: 'B13 \u2014 one formula, multiplying two cells.',
+      targets: [{ cell: 'B13', value: 16500, mustBeFormula: true }],
+      note: '$16,500. A very good year.',
+    },
+    {
+      title: 'A3 · Year two \u2014 you decide what to point at',
+      body: 'Year 2 returns \u201345%. Work the questions before you type.\n\nWANT: the balance after year 2.\nHAVE: two candidates for the starting point \u2014 B4 ($10,000) and B13 ($16,500). Only one is right. Year 2 grows whatever you finished year 1 with.\nCONNECT: a multiplier again. But you do not have a cell holding year 2\u2019s multiplier, so build it inside the formula: (1+B8). The parentheses force the addition to happen before the multiplication.\nSHAPE: not yet.\n\nWrite it in B14.',
+      hint: 'Start from the year-1 balance, not the original deposit:  =B13*(1+B8)',
+      do: 'B14 \u2014 one formula. Two candidates for the starting cell; only one is right.',
+      targets: [{ cell: 'B14', value: 9075, mustBeFormula: true }],
+      note: '$9,075 \u2014 below where you started, after one year up 65% and one year down 45%. Percentages do not cancel, because the 45% came off a bigger pile than the 65% was added to. If you got $5,500 you started from B4; go back and look at why that is the wrong cell.',
+    },
+    {
+      title: 'A4 · Year three, and the SHAPE question finally matters',
+      body: 'WANT: the balance after year 3.\nHAVE: the year-2 balance in B14, and the year-3 return in B9.\nCONNECT: multiply by (1+B9), same as last time.\nSHAPE: this one is money, and money has two decimal places. ROUND fixes that.\n\nHere is how a function is written, and it never changes:\n\n        NAME( argument , argument )\n\nA name, then parentheses, then the things it needs, separated by commas. ROUND needs two: what to round, and how many decimals. So ROUND( your calculation , 2 ). Build it in B15.',
+      hint: 'Put the whole multiplication inside ROUND as its first argument, and 2 as its second:  =ROUND(B14*(1+B9),2)',
+      do: 'B15 \u2014 one formula, wrapped in ROUND with 2 as its second argument.',
+      targets: [{ cell: 'B15', value: 11797.5, mustBeFormula: true }],
+      note: '$11,797.50. Four cells, one year at a time. Remember that number \u2014 you are about to get it a second way.',
+    },
+
+    /* ---- B. compress, and meet absolute refs when they pay off --- */
+    {
+      title: 'B1 · Collapse four cells into one',
+      body: 'You now know what each year does. So skip the intermediate balances and chain the multipliers together in a single cell.\n\nWANT: the same ending value, in one step.\nHAVE: the deposit in B4 and three returns in B7, B8, B9.\nCONNECT: multiply the deposit by all three multipliers, one after another.\nSHAPE: ROUND to 2, same as before.\n\nOne change: write the deposit as $B$4 instead of B4. The dollar signs pin it. It makes no difference right now \u2014 the next step is where it matters. Build it in B18.',
+      hint: '=ROUND($B$4*(1+B7)*(1+B8)*(1+B9),2)',
+      do: 'B18 \u2014 one formula. It should return the same number as B15.',
+      targets: [{ cell: 'B18', value: 11797.5, mustBeFormula: true }],
+      note: 'The same $11,797.50 you got in B15. Two routes, one answer \u2014 which is how you know the compressed version is not a trick.',
+    },
+    {
+      title: 'B2 · Now the pinning pays for itself',
+      body: 'Do the same for the other two portfolios. The shape of the formula does not change at all; only which column the returns come from.\n\nAsk the HAVE question carefully: the 60/40 returns are in C7, C8, C9. The index returns are in D7, D8, D9. But all three portfolios start from the same $10,000 \u2014 the one cell that should NOT change as you move across. That is what $B$4 protects.\n\nBuild C18 and D18.',
+      hint: 'Copy your B18 formula and change every B7/B8/B9 to C7/C8/C9. Leave $B$4 alone. Then repeat with D.',
+      do: 'C18 and D18 \u2014 one formula each, same shape as B18. Change the column letter on the three returns; leave $B$4 exactly as it is.',
+      targets: [
+        { cell: 'C18', value: 12375.84, mustBeFormula: true },
+        { cell: 'D18', value: 13527.36, mustBeFormula: true },
+      ],
+      note: 'That is the whole point of locking a cell: a value every formula needs, written once. Now read across row 18. The single stock finished last, and it is not close.',
+    },
+
+    /* ---- C. choosing the function IS the skill -------------------- */
+    {
+      title: 'C · Pick the tool before you use it',
+      body: 'Four measures are coming, and each one needs a different function. Knowing that MIN exists is useless if you cannot spot the moment you need it \u2014 so match them first, before there is any arithmetic to hide behind.\n\nFour function names: SUM, AVERAGE, MIN, MAX. Column A describes what each one does. Type the matching name into B21, B22, B23 and B24. Just the name, no equals sign and no parentheses \u2014 you are labelling, not calculating yet.',
+      hint: 'Read each description literally. "Adds up a list" is SUM. "Mean of a list" is AVERAGE. "Smallest" is MIN, and MIN is short for minimum.',
+      do: 'B21, B22, B23, B24 \u2014 four function names as plain text. No equals sign, no parentheses. You are labelling, not calculating.',
+      targets: [
+        { cell: 'B21', value: 'SUM', text: true },
+        { cell: 'B22', value: 'AVERAGE', text: true },
+        { cell: 'B23', value: 'MIN', text: true },
+        { cell: 'B24', value: 'MAX', text: true },
+      ],
+      note: 'Those four cover most of what anyone does to a column of numbers. From here on, when you know what you want, ask which of these four gets it \u2014 that question does more work than memorising syntax.',
+    },
+
+    /* ---- D. average: long way, then the shorthand ---------------- */
+    {
+      title: 'D1 · Add up the three returns',
+      body: 'WANT: the three yearly returns added together.\nHAVE: them in B7, B8 and B9.\nCONNECT: you named the function for this in B21.\nSHAPE: leave it raw for now.\n\nOne new piece of syntax. Instead of listing three cells, you can give a function a RANGE \u2014 a start cell, a colon, an end cell. B7:B9 means "B7, B8, B9 and anything between." Build the sum in B27.',
+      hint: 'Function name, parentheses, one range argument:  =SUM(B7:B9)  \u2014 typing =B7+B8+B9 gets the same number.',
+      do: 'B27 \u2014 one formula, using a range as its only argument.',
+      targets: [{ cell: 'B27', value: 0.5, mustBeFormula: true }],
+      note: '0.5 \u2014 fifty percentage points, spread across three years.',
+    },
+    {
+      title: 'D2 · Turn a sum into an average yourself',
+      body: 'Before using AVERAGE, do what it does by hand, so you know what it is doing.\n\nWANT: the average of the three returns.\nHAVE: the sum, in B27.\nCONNECT: an average is a sum divided by how many things went into it. Three years, so divide by 3. The divide symbol is /\nSHAPE: these are rates, not dollars, so 4 decimals rather than 2.\n\nBuild it in B28.',
+      hint: '=ROUND(B27/3,4)',
+      do: 'B28 \u2014 one formula. ROUND to 4 places this time, not 2.',
+      targets: [{ cell: 'B28', value: 0.1667, mustBeFormula: true }],
+      note: '0.1667, which reads as 16.67% a year on average.',
+    },
+    {
+      title: 'D3 · Now let the function do it',
+      body: 'Two cells for one average is a lot of work. AVERAGE does the adding and the dividing in one move.\n\nWANT: the same average, in one cell.\nHAVE: the range B7:B9.\nCONNECT: the function you named in B22, taking one range argument \u2014 exactly like SUM did.\nSHAPE: ROUND to 4.\n\nBuild it in B29. It should match B28 exactly. If it does not, one of the two is wrong.',
+      hint: 'Swap SUM for AVERAGE inside the ROUND:  =ROUND(AVERAGE(B7:B9),4)',
+      do: 'B29 \u2014 one formula. It must match B28 exactly.',
+      targets: [{ cell: 'B29', value: 0.1667, mustBeFormula: true }],
+      note: 'Matching answers. You now know what AVERAGE is doing under the hood, which is the only way you will ever notice when it is the wrong tool for a job.',
+    },
+    {
+      title: 'D4 · Across the other two columns',
+      body: 'Same formula, different column. Ask HAVE and nothing else: where do the 60/40 returns live, and where do the index returns live?\n\nBuild C29 and D29.',
+      hint: 'Only the column letter inside the range changes:  =ROUND(AVERAGE(C7:C9),4)  then the same with D.',
+      do: 'C29 and D29 \u2014 one formula each, same as B29 with the column letter changed.',
+      targets: [
+        { cell: 'C29', value: 0.08, mustBeFormula: true },
+        { cell: 'D29', value: 0.12, mustBeFormula: true },
+      ],
+      note: 'Stop here and read row 29 against row 18. The single stock has the HIGHEST average yearly return of the three \u2014 16.67% against 12% and 8% \u2014 and in row 18 it has the LEAST money. Both numbers are true. Only one of them is your money.',
+    },
+
+    /* ---- E. worst, best, swing ----------------------------------- */
+    {
+      title: 'E1 · Find the year that hurt',
+      body: 'An average hides its worst year, so go get it.\n\nWANT: the smallest of the three returns.\nHAVE: the range B7:B9.\nCONNECT: the function you named in B23.\nSHAPE: nothing \u2014 it is already one of the numbers on screen.\n\nBuild it in B32.',
+      hint: 'Same shape as SUM and AVERAGE, one range argument:  =MIN(B7:B9)',
+      do: 'B32 \u2014 one formula. No ROUND needed. The answer will be negative.',
+      targets: [{ cell: 'B32', value: -0.45, mustBeFormula: true }],
+      note: 'A 45% fall. The +30% that followed could not undo it, because that +30% was taken from a much smaller pile.',
+    },
+    {
+      title: 'E2 · And the best year',
+      body: 'You already know how this one goes. WANT the largest of the three, HAVE the same range, CONNECT with the function from B24. Build it in B33.',
+      hint: 'Identical to the last step with MAX instead of MIN:  =MAX(B7:B9)',
+      do: 'B33 \u2014 one formula, same shape as B32.',
+      targets: [{ cell: 'B33', value: 0.65, mustBeFormula: true }],
+    },
+    {
+      title: 'E3 · The swing, from two cells you own',
+      body: 'How far apart were the best and worst years? That distance is what volatility feels like from the inside.\n\nWANT: the gap between best and worst.\nHAVE: both of them already, in B33 and B32.\nCONNECT: subtract. The minus symbol is -\nSHAPE: a rate, so 4 decimals.\n\nBefore you press Enter, predict the answer. B32 is negative, so subtracting it makes the result BIGGER, not smaller. Build it in B34.',
+      hint: 'Best minus worst, in that order:  =ROUND(B33-B32,4)  \u2014 0.65 minus \u20130.45 is 1.10.',
+      do: 'B34 \u2014 one formula: best minus worst, in that order, wrapped in ROUND to 4 places.',
+      targets: [{ cell: 'B34', value: 1.1, mustBeFormula: true }],
+      note: '1.10 \u2014 a hundred and ten percentage points between this portfolio\u2019s best year and its worst. If you got 0.20 you added the negative instead of subtracting it.',
+    },
+    {
+      title: 'E4 · Nest the functions instead of storing them',
+      body: 'For the other two columns, you are not going to build separate MIN and MAX cells. A function can go straight inside another expression \u2014 anywhere a number could sit, a function that produces a number can sit instead.\n\nSo instead of pointing at two cells, put MAX and MIN directly into the subtraction. Build C34 and D34.',
+      hint: 'Replace B33 and B32 with the functions themselves:  =ROUND(MAX(C7:C9)-MIN(C7:C9),4)  then the same with D.',
+      do: 'C34 and D34 \u2014 one formula each. Same ROUND wrapper and same best-minus-worst order as B34, but with MAX(...) and MIN(...) written where B33 and B32 used to be.',
+      targets: [
+        { cell: 'C34', value: 0.26, mustBeFormula: true },
+        { cell: 'D34', value: 0.38, mustBeFormula: true },
+      ],
+      note: '110 against 26 and 38. Same three years for every portfolio \u2014 the only difference is how the money was spread. And you just wrote a formula three levels deep: ROUND holding a subtraction holding two functions. That is all nesting ever is.',
+    },
+
+    /* ---- F. verdict ---------------------------------------------- */
+    {
+      title: 'F · Read your own table back',
+      body: 'No formulas here. Answer from the cells you built, not from memory. In B37 type the portfolio with the highest average yearly return. In B38 type the one that ended with the most money. Spell them exactly as they appear in row 6.',
+      hint: 'Row 29 holds the averages. Row 18 holds the ending values. They do not point at the same column, and that is the finding.',
+      do: 'B37 and B38 \u2014 plain text, no equals sign. Copy the spelling from row 6: One stock, 60/40 mix, or Index fund.',
+      targets: [
+        { cell: 'B37', value: 'One stock', text: true },
+        { cell: 'B38', value: 'Index fund', text: true },
+      ],
+      note: 'Two different portfolios. That gap is the whole lesson: an average return tells you nothing about what you actually end up holding, and one terrible year in a concentrated bet does damage the good years cannot repair.',
+    },
+
+    /* ---- G. finish early, split into three so each step asks for
+             exactly one kind of answer -------------------------------- */
+    {
+      title: 'G1 \u2014 Break it on purpose',
+      body: 'One company can have a far worse year than a basket of five hundred. Test that.\n\nNo formula for this one. B41 is an input cell, like B7 and B8 are \u2014 it just holds a number you choose.',
+      hint: 'Type the minus sign, then 0.6 \u2014 so: -0.6',
+      do: 'B41 \u2014 type -0.6 as a plain number. No equals sign.',
+      targets: [{ cell: 'B41', value: -0.6 }],
+      note: 'A 60% drop in year two, sitting in a cell of its own so you can change it again later.',
+    },
+    {
+      title: 'G2 \u2014 Rerun the portfolio',
+      body: 'WANT: the ending value if year two had been that bad.\nHAVE: everything B18 used, except year two now comes from B41 instead of B8.\nCONNECT: nothing new \u2014 this is your B18 formula.\nSHAPE: ROUND to 2, same as B18.\n\nExactly one reference changes. Find it before you type.',
+      hint: 'Copy B18 and swap B8 for B41:  =ROUND($B$4*(1+B7)*(1+B41)*(1+B9),2)',
+      do: 'B42 \u2014 one formula, identical to B18 except for a single cell reference.',
+      targets: [{ cell: 'B42', value: 8580, mustBeFormula: true }],
+      note: '$8,580 \u2014 less than the $10,000 that went in, after a year that gained 65% and a year that gained 30%.',
+    },
+    {
+      title: 'G3 \u2014 Call it',
+      body: 'Compare what you just built in B42 against the index fund\u2019s ending value in D18.',
+      hint: 'B42 is $8,580. D18 is $13,527.36.',
+      do: 'B43 \u2014 type Yes or No as plain text. No equals sign.',
+      targets: [{ cell: 'B43', value: 'No', text: true }],
+      note: 'An index fund holding five hundred companies cannot fall 60% because one of them had a catastrophe. That is not a strategy. It is arithmetic.',
+    },
+  ],
+
+  closing: {
+    title: 'What you built',
+    body: 'Seventeen formulas, and you were not handed any of them whole. Every one came out of the same four questions: what do I want, what do I have and where, what connects them, does the answer need shaping. That is the method, and it does not care whether the subject is portfolios or payroll or a grocery budget.\n\nTwo things worth trying now that it works. Change B7 to 0.10 and watch exactly which cells move and which sit still. Then set B4 to 1000 and notice that the ending values all change while the averages, the worst years and the swings do not budge at all \u2014 because those measure the shape of the returns, not the size of the deposit.',
+  },
+};
+
+
+
+
+const sheet = new Sheet(lesson.rows, lesson.cols);
+const given = new Set(Object.keys(lesson.given));
+for (const [ref, v] of Object.entries(lesson.given)) sheet.setRaw(ref, String(v));
+
+let sel = 'B4';
+let editing = false;   // false = navigating with arrows, true = typing in a cell
+let stepIdx = 0;
+const doneSteps = new Set();
+const shownHints = new Set();
+const failures = new Map();
+
+const $ = (id) => document.getElementById(id);
+$('h-unit').textContent = lesson.unit;
+$('h-title').textContent = lesson.title;
+
+const targetsOf = (i) => (lesson.steps[i] ? lesson.steps[i].targets.map((t) => t.cell) : []);
+const fmt = (v) => {
+  if (typeof v === 'number') {
+    if (!isFinite(v)) return '#ERR';
+    return Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v))
+         : v.toFixed(Math.abs(v) < 1 ? 4 : 2);
+  }
+  return v === '' ? '' : String(v);
+};
+
+/* ---------- grid ---------- */
+function drawGrid() {
+  const t = $('grid');
+  t.innerHTML = '';
+  const head = document.createElement('tr');
+  head.appendChild(Object.assign(document.createElement('th'), { className: 'corner' }));
+  for (let c = 0; c < lesson.cols; c++) {
+    const th = document.createElement('th');
+    th.textContent = colName(c);
+    head.appendChild(th);
+  }
+  t.appendChild(head);
+
+  const active = new Set(targetsOf(stepIdx));
+  const lit = referencedCells($('input').value);
+
+  for (let r = 0; r < lesson.rows; r++) {
+    const tr = document.createElement('tr');
+    const rh = document.createElement('th');
+    rh.className = 'rowhead'; rh.textContent = r + 1;
+    tr.appendChild(rh);
+    for (let c = 0; c < lesson.cols; c++) {
+      const ref = rcToRef(r, c);
+      const td = document.createElement('td');
+      const raw = sheet.getRaw(ref);
+      const val = raw === '' ? '' : sheet.value(ref);
+      td.textContent = sheet.errors.has(ref) ? '#ERR' : fmt(val);
+      td.dataset.ref = ref;
+      if (typeof val === 'number' && raw !== '') td.classList.add('num');
+      if (typeof val === 'string' && val !== '') td.classList.add('label');
+      if (given.has(ref)) {
+        td.classList.add('given');
+        if (/^[A-Z]/.test(String(lesson.given[ref])) || ref === 'A1') td.classList.add('head');
+      }
+      td.setAttribute('role', 'gridcell');
+      td.setAttribute('aria-readonly', given.has(ref) ? 'true' : 'false');
+      if (sheet.errors.has(ref)) td.classList.add('err');
+      if (active.has(ref)) td.classList.add('target');
+      if (doneCells.has(ref)) td.classList.add('solved');
+      if (lit.has(ref)) td.classList.add('lit');
+      if (ref === sel) td.classList.add('sel');
+      tr.appendChild(td);
+    }
+    t.appendChild(tr);
+  }
+}
+const doneCells = new Set();
+
+/* ---------------------------------------------------------------
+   Two modes, the way a real spreadsheet works.
+   Navigating: the grid holds focus, arrows move the selection.
+   Editing:    the formula bar holds focus, arrows move the caret.
+   Typing a printable character on a cell starts editing it.
+   --------------------------------------------------------------- */
+
+function setMode(mode) {
+  editing = (mode === 'edit');
+  $('sheetpane').classList.toggle('editing', editing);
+  $('sheetpane').classList.toggle('nav', !editing);
+  if (editing) $('input').focus();
+  else { $('input').blur(); $('gridwrap').focus(); }
+  if (!editing) $('sheetpane').classList.remove('picking');
+}
+
+function select(ref, { edit = false, seed = null } = {}) {
+  if (editing) commit();
+  sel = ref;
+  $('addr').textContent = ref;
+  const readOnly = given.has(ref);
+  $('input').readOnly = readOnly;
+  $('input').value = seed !== null ? seed : sheet.getRaw(ref);
+  say(readOnly ? 'This cell is part of the problem and cannot be changed.' : '');
+  drawGrid();
+  scrollSelIntoView();
+  setMode(edit && !readOnly ? 'edit' : 'nav');
+  if (edit && !readOnly && seed !== null) {
+    const n = $('input').value.length;
+    $('input').setSelectionRange(n, n);
+  }
+}
+
+function scrollSelIntoView() {
+  const td = $('grid').querySelector('td.sel');
+  if (td) td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function commit() {
+  if (!sel || given.has(sel)) return;
+  const v = $('input').value;
+  if (v !== sheet.getRaw(sel)) {
+    sheet.setRaw(sel, v);
+    say(sheet.errors.has(sel) ? sheet.errors.get(sel) : '', sheet.errors.has(sel));
+  }
+}
+
+function moveBy(dr, dc, opts) {
+  const rc = refToRC(sel);
+  const r = Math.max(0, Math.min(lesson.rows - 1, rc.r + dr));
+  const c = Math.max(0, Math.min(lesson.cols - 1, rc.c + dc));
+  select(rcToRef(r, c), opts);
+}
+
+/* ---- pointing at cells ----
+   pointerdown, not mousedown: one code path for trackpad, touchscreen and
+   stylus. Plenty of Chromebooks are touch devices and mousedown alone is
+   unreliable there.
+
+   Three things can happen when you point at a cell:
+     1. mid-formula  -> insert that cell's reference where the cursor is
+     2. already selected -> open it for editing
+     3. otherwise    -> just select it                                   */
+
+const OPEN_FOR_REF = /[=+\-*/^(,:%<>]\s*$/;
+
+function pickingRef() {
+  if (!editing) return false;
+  const el = $('input');
+  if (el.readOnly || !el.value.startsWith('=')) return false;
+  return OPEN_FOR_REF.test(el.value.slice(0, el.selectionStart));
+}
+
+function insertRef(ref) {
+  const el = $('input');
+  const a = el.selectionStart, b = el.selectionEnd;
+  el.value = el.value.slice(0, a) + ref + el.value.slice(b);
+  const pos = a + ref.length;
+  el.setSelectionRange(pos, pos);
+  el.focus();
+  drawGrid();
+}
+
+function refreshPicking() {
+  $('sheetpane').classList.toggle('picking', pickingRef());
+}
+
+$('grid').addEventListener('pointerdown', (e) => {
+  const td = e.target.closest('td');
+  if (!td) return;
+  const ref = td.dataset.ref;
+
+  if (pickingRef()) {          // building a formula: point instead of type
+    e.preventDefault();        // keep focus in the input
+    insertRef(ref);
+    return;
+  }
+
+  e.preventDefault();
+  if (ref === sel && !given.has(ref)) select(ref, { edit: true });
+  else select(ref);
+});
+
+$('grid').addEventListener('dblclick', (e) => {
+  const td = e.target.closest('td');
+  if (!td || given.has(td.dataset.ref)) return;
+  select(td.dataset.ref, { edit: true });
+});
+
+/* ---- navigating ---- */
+$('gridwrap').addEventListener('keydown', (e) => {
+  if (editing) return;
+  const k = e.key;
+  const nav = {
+    ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1],
+  }[k];
+  if (nav) { e.preventDefault(); moveBy(nav[0], nav[1]); return; }
+  if (k === 'Tab') { e.preventDefault(); moveBy(0, e.shiftKey ? -1 : 1); return; }
+  if (k === 'Enter' || k === 'F2') { e.preventDefault(); select(sel, { edit: true }); return; }
+  if (k === 'Home') { e.preventDefault(); const rc = refToRC(sel); select(rcToRef(rc.r, 0)); return; }
+  if (k === 'End') { e.preventDefault(); const rc = refToRC(sel); select(rcToRef(rc.r, lesson.cols - 1)); return; }
+  if (k === 'PageUp') { e.preventDefault(); moveBy(-10, 0); return; }
+  if (k === 'PageDown') { e.preventDefault(); moveBy(10, 0); return; }
+  if (k === 'Delete' || k === 'Backspace') {
+    e.preventDefault();
+    if (!given.has(sel)) { sheet.setRaw(sel, ''); $('input').value = ''; drawGrid(); }
+    return;
+  }
+  // A printable character starts editing, with that character already typed.
+  if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    if (given.has(sel)) { say('This cell is part of the problem and cannot be changed.'); return; }
+    select(sel, { edit: true, seed: k });
+  }
+});
+
+/* ---- editing ---- */
+$('input').addEventListener('input', () => { drawGrid(); refreshPicking(); });
+$('input').addEventListener('keyup', refreshPicking);
+$('input').addEventListener('click', refreshPicking);
+$('input').addEventListener('focus', () => setMode('edit'));
+$('input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); commit(); moveBy(1, 0); }
+  else if (e.key === 'Tab') { e.preventDefault(); commit(); moveBy(0, e.shiftKey ? -1 : 1); }
+  else if (e.key === 'Escape') {
+    e.preventDefault();
+    $('input').value = sheet.getRaw(sel);
+    drawGrid(); setMode('nav');
+  }
+});
+
+function say(text, bad) { const m = $('msg'); m.textContent = text || ''; m.className = bad ? 'bad' : ''; }
+
+/* ---------- steps ---------- */
+function checkStep(i) {
+  const bad = [];
+  for (const t of lesson.steps[i].targets) {
+    const raw = String(sheet.getRaw(t.cell)).trim();
+    if (raw === '') { bad.push(`${t.cell} is still empty.`); continue; }
+    if (sheet.errors.has(t.cell)) { bad.push(`${t.cell}: ${sheet.errors.get(t.cell)}`); continue; }
+    if (t.mustBeFormula && !sheet.isFormula(t.cell)) {
+      bad.push(`${t.cell} needs a formula that starts with =, not a typed-in answer.`); continue;
+    }
+    const v = sheet.value(t.cell);
+    if (t.text) {
+      if (String(v).trim().toLowerCase() !== String(t.value).toLowerCase())
+        bad.push(`${t.cell} does not match one of the debt labels in column A.`);
+    } else if (typeof v !== 'number' || Math.abs(v - t.value) > 1e-6) {
+      bad.push(`${t.cell} is not right yet.`);
+    }
+  }
+  return bad;
+}
+
+function drawSteps() {
+  const box = $('steps');
+  box.innerHTML = '';
+  const b = document.createElement('p');
+  b.className = 'blurb'; b.textContent = lesson.blurb;
+  box.appendChild(b);
+
+  lesson.steps.forEach((s, i) => {
+    const el = document.createElement('article');
+    el.className = 'step' + (doneSteps.has(i) ? ' done' : i === stepIdx ? ' current' : ' locked');
+    el.innerHTML = `<span class="n">${doneSteps.has(i) ? '✓' : i + 1}</span><h3></h3>`;
+    el.querySelector('h3').textContent = s.title;
+
+    if (i === stepIdx || doneSteps.has(i)) {
+      const p = document.createElement('p'); p.className = 'body'; p.textContent = s.body; el.appendChild(p);
+      if (s.do) {
+        const dv = document.createElement('div'); dv.className = 'do';
+        const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = 'Your turn';
+        dv.appendChild(tg);
+        dv.appendChild(document.createTextNode(s.do));
+        el.appendChild(dv);
+      }
+    }
+    if (i === stepIdx) {
+      if (shownHints.has(i) && s.hint) {
+        const h = document.createElement('div'); h.className = 'hint';
+        h.textContent = s.hint; el.appendChild(h);
+      }
+      if (failures.has(i)) {
+        const f = document.createElement('div'); f.className = 'fail';
+        f.innerHTML = '<strong>Not yet.</strong><ul>' +
+          failures.get(i).map((x) => `<li>${x}</li>`).join('') + '</ul>';
+        el.appendChild(f);
+      }
+      const row = document.createElement('div'); row.className = 'row';
+      const check = document.createElement('button');
+      check.className = 'btn'; check.textContent = 'Check this step';
+      check.onclick = () => {
+        commit();
+        const bad = checkStep(i);
+        if (bad.length) { failures.set(i, bad); drawSteps(); }
+        else {
+          failures.delete(i);
+          doneSteps.add(i);
+          targetsOf(i).forEach((c) => doneCells.add(c));
+          stepIdx = Math.min(i + 1, lesson.steps.length);
+          const next = targetsOf(stepIdx).find((c) => !doneCells.has(c));
+          drawSteps();
+          if (next) select(next, { edit: true }); else drawGrid();
+          $('steps').scrollTo({ top: $('steps').scrollHeight, behavior: 'smooth' });
+        }
+      };
+      row.appendChild(check);
+      if (s.hint) {
+        const hb = document.createElement('button');
+        hb.className = 'btn ghost'; hb.textContent = shownHints.has(i) ? 'Hide hint' : 'Show hint';
+        hb.onclick = () => { shownHints.has(i) ? shownHints.delete(i) : shownHints.add(i); drawSteps(); };
+        row.appendChild(hb);
+      }
+      el.appendChild(row);
+    }
+    if (doneSteps.has(i) && s.note) {
+      const n = document.createElement('div'); n.className = 'note';
+      n.textContent = s.note; el.appendChild(n);
+    }
+    box.appendChild(el);
+  });
+
+  if (doneSteps.size === lesson.steps.length) {
+    const d = document.createElement('div'); d.id = 'done';
+    d.innerHTML = '<h3></h3><p></p>';
+    d.querySelector('h3').textContent = lesson.closing.title;
+    const cp = d.querySelector('p'); cp.style.whiteSpace = 'pre-line'; cp.textContent = lesson.closing.body;
+    box.appendChild(d);
+  }
+  $('h-count').textContent = `${doneSteps.size} of ${lesson.steps.length} steps`;
+  drawGrid();
+}
+
+drawSteps();
+select('E4');
+setMode('nav');
+</script>
+</body>
+</html>
