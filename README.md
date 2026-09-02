@@ -14,7 +14,28 @@ no JS on the landing page.
 | `js/` | Checker engine and per-primitive tools. Empty for now — see below. |
 | `tests/` | jsdom tests. Empty for now. |
 | `package.json` | jsdom, for the tests. |
-| `.nojekyll` | Stops GitHub Pages from hiding anything that starts with an underscore. |
+
+No `.nojekyll` in this archive on purpose — GitHub's web uploader silently skips
+dotfiles, so shipping one would just look like it worked. See below.
+
+## Setting it up by drag-and-drop
+
+Unzip and drag **the contents** into the upload box, not the folder itself —
+dragging the folder gets you a nested `fm-hub/` directory and Pages will serve
+nothing at the root.
+
+### About `.nojekyll`
+
+You do not need it for this repo as it stands. GitHub Pages runs Jekyll, and
+Jekyll hides paths beginning with `_` or `.` — this repo has none. Nothing here
+contains Liquid syntax either.
+
+You *will* need it the moment either of those changes, and the most likely
+trigger is porting the checker kit: if any JS file contains `{{` or `{%`, the
+Pages build fails outright rather than degrading. Add it then, via
+**Add file → Create new file**, type `.nojekyll` as the filename, leave the body
+empty, commit. The web editor allows empty files; the uploader is what doesn't.
+Twenty seconds, and it is the only way to get a dotfile in through the browser.
 
 ## Activating a card
 
