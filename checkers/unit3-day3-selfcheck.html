@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unit 3 Day 3 — Self Check</title>
+<style>
+/* Everything inline on purpose. No fonts, no CDN, no imports.
+   This file works offline, from a USB stick, or emailed as an attachment. */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#13171D;--surface:#1E242C;--border:#333B45;--text:#E7E3DA;--muted:#9AA3AD;
+  --accent:#5BA8CE;--accent-lt:#1B2C36;--ok:#6FBF7A;--ok-lt:#1A2A1E;
+  --warn:#E0A53A;--warn-lt:#2E2615;--err:#E06B6B;--err-lt:#2E1A1A;
+  --header:#0E1218;--rail:#3A4556;
+}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:60px}
+.hdr{background:var(--header);padding:14px 18px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hdr h1{font-size:1.05rem;font-weight:600}
+.hdr .sub{font-size:.72rem;color:#8A9BB0}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{min-width:28px;height:28px;padding:0 7px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;border:2px solid var(--rail);color:var(--rail);background:transparent;cursor:pointer}
+.dot.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.dot.active{border-color:var(--accent);color:var(--accent)}
+main{max-width:680px;margin:0 auto;padding:16px}
+.part{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:26px 0 8px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+.card.done{padding:12px 18px;background:var(--ok-lt);border-color:var(--ok)}
+.qn{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.qn .chk{color:var(--ok)}
+.qp{font-size:.95rem;margin-bottom:14px}
+.given{background:var(--accent-lt);border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:14px;font-size:.85rem}
+.given table{border-collapse:collapse;width:100%;margin-top:6px;font-variant-numeric:tabular-nums}
+.given th,.given td{text-align:right;padding:3px 6px;font-size:.82rem}
+.given th:first-child,.given td:first-child{text-align:left;color:var(--muted)}
+.given thead th{border-bottom:1px solid var(--border);color:var(--accent);font-size:.74rem}
+.step{border-top:1px solid var(--border);padding-top:13px;margin-top:13px}
+.step:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.slabel{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ask{font-size:.9rem;margin-bottom:9px}
+.cellref{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;background:var(--header);border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--accent)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row .pfx{color:var(--muted);font-weight:600}
+input[type=text]{flex:1;min-width:110px;background:var(--header);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:1rem;font-family:inherit}
+input[type=text]:focus{outline:0;border-color:var(--accent)}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit}
+.go{background:var(--accent);color:#0E1218}
+.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.opt{background:var(--header);border:1px solid var(--border);border-radius:9px;padding:11px 13px;cursor:pointer;font-size:.88rem}
+.opt.sel{border-color:var(--accent);background:var(--accent-lt)}
+.fb{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:.85rem}
+.fb.err{background:var(--err-lt);color:var(--err)}
+.fb.warn{background:var(--warn-lt);color:var(--warn)}
+.fb.ok{background:var(--ok-lt);color:var(--ok)}
+.hint{margin-top:9px;padding:9px 12px;border-left:3px solid var(--warn);background:var(--warn-lt);color:var(--warn);font-size:.83rem;border-radius:0 8px 8px 0}
+.tiny{font-size:.7rem;color:var(--muted);margin-top:5px}
+.redirect{margin-top:9px;padding:11px 13px;border-left:3px solid var(--warn);background:var(--warn-lt);color:var(--warn);font-weight:600;font-size:.85rem;border-radius:0 8px 8px 0}
+.note{margin-top:11px;padding:10px 13px;background:var(--accent-lt);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:.85rem}
+.done-sum{font-size:.84rem;color:var(--muted)}
+.done-sum b{color:var(--ok);font-variant-numeric:tabular-nums}
+.finale{background:var(--ok-lt);border:1px solid var(--ok);border-radius:12px;padding:20px;margin-top:18px}
+.finale h2{font-size:1rem;color:var(--ok);margin-bottom:8px}
+.finale p{font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div><h1>Bonds, Funds &amp; Diversification</h1><div class="sub">Unit 3 &middot; Day 3 &mdash; Self Check</div></div>
+  <div class="dots" id="dots"></div>
+</div>
+<main id="main"></main>
+
+<script>
+/* ============================================================
+   Self-contained checker. Work it on paper, then check here.
+   Money accepts $1,200 / 1200 / 1,200.00 as one answer.
+   Percent accepts 5% / 5 / 0.05 as one answer.
+   Three misses on a step routes you to your teacher.
+   ============================================================ */
+
+var RETURNS = {
+  head: ['One stock', '60/40 mix', 'Index fund'],
+  rows: [['Year 1', '+65%', '+18%', '+26%'],
+         ['Year 2', '\u201345%', '\u20138%', '\u201312%'],
+         ['Year 3', '+30%', '+14%', '+22%']]
+};
+function tableGiven(intro) {
+  var h = '<div class="given">' + intro + '<table><thead><tr><th></th>';
+  RETURNS.head.forEach(function (c) { h += '<th>' + c + '</th>'; });
+  h += '</tr></thead><tbody>';
+  RETURNS.rows.forEach(function (r) {
+    h += '<tr>'; r.forEach(function (c) { h += '<td>' + c + '</td>'; }); h += '</tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+var Q = [
+
+/* ---------- PART 1 — the three portfolios ---------- */
+{ part: 'Part 1 \u2014 Three portfolios, same money', id: 'p1a', num: 'Q1',
+  prompt: '$10,000 goes into each of three portfolios for three years.',
+  given: tableGiven('Same money, same years, three ways to hold it.'),
+  steps: [
+    { t: 'money', label: 'Ending value \u2014 one stock', cell: 'B12', ans: 11797.50,
+      ask: 'What is the one-stock portfolio worth after three years?',
+      hint: 'Money multiplies, it does not add. $10,000 \u00D7 1.65 \u00D7 0.55 \u00D7 1.30.',
+      traps: [{ near: 15000, msg: 'You added the percentages. Each year multiplies: +65% means \u00D7 1.65, \u201345% means \u00D7 0.55.' },
+              { near: 10000, msg: 'That is the starting amount. Run all three years.' }] },
+    { t: 'money', label: 'Ending value \u2014 60/40 mix', cell: 'C12', ans: 12375.84,
+      ask: 'And the 60/40 mix?',
+      hint: '$10,000 \u00D7 1.18 \u00D7 0.92 \u00D7 1.14.' },
+    { t: 'money', label: 'Ending value \u2014 index fund', cell: 'D12', ans: 13527.36,
+      ask: 'And the index fund?',
+      hint: '$10,000 \u00D7 1.26 \u00D7 0.88 \u00D7 1.22.',
+      note: 'Three ending values, and they are not in the order most people would guess. Hold that thought.' }
+  ] },
+
+{ part: null, id: 'p1b', num: 'Q2',
+  prompt: 'Now the number a salesperson would put on a slide: the plain average of the three yearly returns.',
+  given: tableGiven(''),
+  steps: [
+    { t: 'pct', label: 'Average yearly return \u2014 one stock', cell: 'B15', ans: 0.1667, tol: 0.0006,
+      ask: 'Average the three yearly returns for the one stock.',
+      hint: 'Add +65, \u201345 and +30, then divide by 3.',
+      traps: [{ near: 0.50, msg: 'That is the sum, not the average. Divide by 3.' }] },
+    { t: 'pct', label: 'Average yearly return \u2014 60/40 mix', cell: 'C15', ans: 0.08, tol: 0.0006,
+      ask: 'Same for the 60/40 mix.' },
+    { t: 'pct', label: 'Average yearly return \u2014 index fund', cell: 'D15', ans: 0.12, tol: 0.0006,
+      ask: 'And the index fund.',
+      note: 'Look at what just happened. The one stock has the BEST average return of the three \u2014 and the WORST ending value. Both numbers are true. Only one of them is your money.' }
+  ] },
+
+{ part: null, id: 'p1c', num: 'Q3',
+  prompt: 'An average hides the years that hurt. Find the worst single year in each column, and then how far apart the best and worst years were.',
+  given: tableGiven(''),
+  steps: [
+    { t: 'pct', label: 'Worst single year \u2014 one stock', cell: 'B18', ans: -0.45, tol: 0.0006,
+      ask: 'What was the one stock\u2019s worst year? (Include the minus sign.)',
+      hint: 'Read straight off the table \u2014 no arithmetic.' },
+    { t: 'pct', label: 'Swing \u2014 one stock', cell: 'B21', ans: 1.10, tol: 0.0006,
+      ask: 'Best year minus worst year, for the one stock.',
+      hint: '+65% minus \u201345%. Subtracting a negative makes it bigger \u2014 that is not a mistake.',
+      traps: [{ near: 0.20, msg: 'You added a negative instead of subtracting it. 65 \u2212 (\u201345) is 110, not 20.' }] },
+    { t: 'pct', label: 'Swing \u2014 60/40 mix', cell: 'C21', ans: 0.26, tol: 0.0006,
+      ask: 'And the swing for the 60/40 mix.',
+      note: 'The one stock swung 110 points from best year to worst. The 60/40 swung 26. Same three years \u2014 the only difference is how the money was spread out.' }
+  ] },
+
+{ part: null, id: 'p1d', num: 'Q4',
+  prompt: 'Read your own numbers back.',
+  steps: [
+    { t: 'choice', label: 'Highest average yearly return', ans: 0,
+      ask: 'Which portfolio had the highest average yearly return?',
+      opts: ['One stock', '60/40 mix', 'Index fund'],
+      nudge: 'Check the averages you found in Q2, not the ending values.' },
+    { t: 'choice', label: 'Most money at the end', ans: 2,
+      ask: 'Which one ended with the most money?',
+      opts: ['One stock', '60/40 mix', 'Index fund'],
+      nudge: 'Check the ending values from Q1.',
+      note: 'Two different portfolios. That gap is the whole point of today: an average return tells you nothing about what you actually end up holding, and one terrible year in a concentrated bet does damage the good years cannot undo.' }
+  ] },
+
+/* ---------- PART 2 — bonds ---------- */
+{ part: 'Part 2 \u2014 Bonds: you are the lender now', id: 'p2a', num: 'Q5',
+  prompt: 'Terrence buys a bond with a face value of $5,000 and a coupon rate of 4%. He holds it the full 10-year term.',
+  steps: [
+    { t: 'choice', label: 'What the coupon applies to', ans: 0,
+      ask: 'The 4% is a percentage of which number?',
+      opts: ['The $5,000 face value', 'Whatever price it last sold for', 'The face value minus the coupon'],
+      nudge: 'A coupon is always a percentage of face value, no matter what the bond later sells for.' },
+    { t: 'money', label: 'Interest in one year', cell: null, ans: 200,
+      ask: 'How much interest does the bond pay him each year?',
+      hint: '4% of $5,000.',
+      traps: [{ near: 2000, msg: 'That is ten years of interest. This step asks for one year.' }] },
+    { t: 'money', label: 'Interest over the whole term', ans: 2000,
+      ask: 'Over the full 10 years, how much interest in total?',
+      traps: [{ near: 7000, msg: 'That includes the $5,000 coming back. Interest only here.' }] },
+    { t: 'money', label: 'What he walks away with', ans: 7000,
+      ask: 'At the end he also gets the face value back. What does he have in total?',
+      traps: [{ near: 2000, msg: 'That is the interest alone \u2014 add the face value back in.' },
+              { near: 5000, msg: 'That is only the money he lent. He kept the interest too.' }],
+      note: 'Two separate promises: $200 a year for ten years, and the $5,000 back at the end. Neither one depends on the stock market having a good year. A shareholder is promised nothing.' }
+  ] },
+
+{ part: null, id: 'p2b', num: 'Q6',
+  prompt: 'Terrence sells the bond to Yvette for $4,000. It still pays the same $200 a year.',
+  steps: [
+    { t: 'pct', label: 'Yvette\u2019s current yield', ans: 0.05, tol: 0.0006,
+      ask: 'What percent return is Yvette earning on the $4,000 she actually paid?',
+      hint: 'Yearly payment divided by what SHE paid.',
+      traps: [{ near: 0.04, msg: 'That is the coupon rate on the original $5,000. Yvette paid less \u2014 divide by her price.' }] },
+    { t: 'choice', label: 'Why her yield is higher', ans: 0,
+      ask: 'Yvette earns 5% where Terrence earned 4%, on the very same bond. Why?',
+      opts: ['Its price fell, so the same $200 is a bigger share of what she paid',
+             'The company raised the coupon it pays her',
+             'Bond yields are set once and never change'],
+      nudge: 'The $200 never changed. Only the price someone paid for the right to collect it changed.',
+      note: 'The rule, always: when a bond\u2019s price goes DOWN, its yield goes UP. The payment is fixed, so only the denominator can move.' }
+  ] },
+
+/* ---------- PART 3 — fund fees ---------- */
+{ part: 'Part 3 \u2014 What a fee really costs', id: 'p3', num: 'Q7',
+  prompt: 'Two funds both return 8% a year before fees. Fund A charges an expense ratio of 0.04%. Fund B charges 1.00%. You put $10,000 in one of them.',
+  steps: [
+    { t: 'pct', label: 'Fund A after its fee', ans: 0.0796, tol: 0.0002,
+      ask: 'What does Fund A actually return after its fee comes out?',
+      traps: [{ near: 0.08, msg: 'You did not take the fee out yet.' }] },
+    { t: 'pct', label: 'Fund B after its fee', ans: 0.07, tol: 0.0002,
+      ask: 'And Fund B?',
+      traps: [{ near: 0.0796, msg: 'That is Fund A. Fund B\u2019s fee is 1.00%.' }] },
+    { t: 'money', label: 'Fund A\u2019s fee, year one', ans: 4,
+      ask: 'In dollars, what does Fund A\u2019s fee cost you in year one on $10,000?',
+      hint: '0.04% is four hundredths of one percent. Watch the decimal.',
+      traps: [{ near: 400, msg: 'Watch the decimal \u2014 0.04% is not 4%.' }] },
+    { t: 'money', label: 'Fund B\u2019s fee, year one', ans: 100,
+      ask: 'And Fund B\u2019s fee in year one?',
+      traps: [{ near: 1000, msg: 'Watch the decimal \u2014 1.00% of $10,000.' }] },
+    { t: 'money', label: 'The gap', ans: 96,
+      ask: 'How much more does Fund B cost you in year one?',
+      traps: [{ near: 104, msg: 'You added the two fees. Find the difference.' }] },
+    { t: 'choice', label: 'Why the gap grows', ans: 0,
+      ask: 'That $96 gap does not stay $96 \u2014 it widens every year. Why?',
+      opts: ['The fee is charged on the whole balance, which keeps growing',
+             'The fee percentage rises every year',
+             'The fee is a flat dollar amount forever'],
+      nudge: 'The percentage never changes. Think about what it is taken from, and what happens to that number over forty years.',
+      note: 'The 8% is identical in both funds. The fee is the only difference \u2014 and it is the one you get to choose.' }
+  ] }
+];
+
+/* ---- parsing --------------------------------------------------- */
+function parseMoney(raw) {
+  if (raw == null) return NaN;
+  var s = ('' + raw).trim(); if (!s) return NaN;
+  var neg = /^\(.*\)$/.test(s) || /^[-\u2212]/.test(s);
+  s = s.replace(/[()\s,$\u2212-]/g, '');
+  if (s === '' || !/^\d*\.?\d*$/.test(s)) return NaN;
+  var v = parseFloat(s); if (isNaN(v)) return NaN;
+  return neg ? -v : v;
+}
+function money(v) {
+  var neg = v < 0, a = Math.abs(v);
+  return (neg ? '-$' : '$') + a.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function pctText(d) { return +(d * 100).toFixed(4) + '%'; }
+
+/* ---- state ----------------------------------------------------- */
+var S = Q.map(function (q) {
+  return { si: 0, done: false, steps: q.steps.map(function () { return { val: '', sel: null, miss: 0, fb: null, hint: false, redirect: false }; }) };
+});
+var active = 0;
+
+function checkStep(step, st) {
+  if (step.t === 'choice') {
+    if (st.sel == null) return { soft: true, fb: { t: 'err', m: 'Tap an option first.' } };
+    if (st.sel === step.ans) return { pass: true };
+    return { fb: { t: 'err', m: step.nudge || 'Not quite \u2014 try again.' } };
+  }
+  var tol = step.tol != null ? step.tol : 0.01;
+  if (step.t === 'money') {
+    var v = parseMoney(st.val);
+    if (isNaN(v)) return { soft: true, fb: { t: 'err', m: 'Enter a dollar amount.' } };
+    if (Math.abs(v - step.ans) <= tol) return { pass: true };
+    if (step.traps) for (var i = 0; i < step.traps.length; i++) {
+      if (Math.abs(v - step.traps[i].near) <= (step.traps[i].tol || 0.01)) return { fb: { t: 'err', m: step.traps[i].msg } };
+    }
+    if (step.ans !== 0 && Math.abs(v - step.ans) <= Math.abs(step.ans) * 0.02)
+      return { fb: { t: 'warn', m: 'Close \u2014 check your rounding. Answers go to the cent.' } };
+    return { fb: { t: 'err', m: 'Not quite. Check what you multiplied.' } };
+  }
+  /* percent: test both readings so there is no format to guess */
+  var raw = ('' + st.val).trim();
+  if (!raw) return { soft: true, fb: { t: 'err', m: 'Enter a percentage.' } };
+  var hadPct = /%/.test(raw);
+  var n = parseFloat(raw.replace(/[%\s,]/g, '').replace(/\u2212/g, '-'));
+  if (isNaN(n)) return { soft: true, fb: { t: 'err', m: 'Enter a percentage.' } };
+  var cands = hadPct ? [n / 100] : [n / 100, n];
+  for (var c = 0; c < cands.length; c++) if (Math.abs(cands[c] - step.ans) <= tol) return { pass: true };
+  if (step.traps) for (var j = 0; j < step.traps.length; j++) for (var k = 0; k < cands.length; k++) {
+    if (Math.abs(cands[k] - step.traps[j].near) <= (step.traps[j].tol || tol)) return { fb: { t: 'err', m: step.traps[j].msg } };
+  }
+  for (var m2 = 0; m2 < cands.length; m2++) if (step.ans !== 0 && Math.abs(cands[m2] - step.ans) <= Math.abs(step.ans) * 0.06)
+    return { fb: { t: 'warn', m: 'Close \u2014 check your rounding.' } };
+  return { fb: { t: 'err', m: 'Not quite. Check which number you divided by.' } };
+}
+
+function act(qi, si, what, payload) {
+  var q = Q[qi], step = q.steps[si], st = S[qi].steps[si];
+  if (what === 'pick') { st.sel = payload; st.fb = null; return render(); }
+  if (what === 'input') { st.val = payload; st.fb = null; return; }
+  if (what === 'hint') { st.hint = !st.hint; return render(); }
+  if (what === 'skip') { st.redirect = false; st.fb = null; advance(qi); return render(); }
+  if (what === 'check') {
+    var r = checkStep(step, st);
+    if (r.pass) { st.fb = null; st.redirect = false; advance(qi); }
+    else if (r.soft) { st.fb = r.fb; }
+    else if (r.fb && r.fb.t === 'warn') { st.fb = r.fb; }
+    else {
+      st.miss++;
+      if (st.miss >= 3) { st.redirect = true; st.fb = null; }
+      else st.fb = r.fb;
+    }
+    render();
+  }
+}
+function advance(qi) {
+  var s = S[qi];
+  s.si++;
+  if (s.si >= Q[qi].steps.length) { s.done = true; if (qi < Q.length - 1) active = qi + 1; }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goTo(i) { active = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+function esc(s) { return ('' + (s == null ? '' : s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function summary(step, st) {
+  if (step.t === 'choice') return esc(step.opts[step.ans]);
+  return step.t === 'money' ? money(step.ans) : pctText(step.ans);
+}
+
+function renderStep(qi, si) {
+  var q = Q[qi], step = q.steps[si], st = S[qi].steps[si], cur = S[qi].si;
+  if (si < cur) {
+    return '<div class="step"><div class="slabel">' + esc(step.label) + '</div>' +
+           '<div class="done-sum">\u2713 <b>' + summary(step, st) + '</b></div>' +
+           (step.note ? '<div class="note">' + esc(step.note) + '</div>' : '') + '</div>';
+  }
+  if (si > cur) return '';
+  var h = '<div class="step"><div class="slabel">' + esc(step.label) +
+          (step.cell ? ' &nbsp;<span class="cellref">' + esc(step.cell) + '</span>' : '') + '</div>';
+  h += '<div class="ask">' + esc(step.ask) + '</div>';
+  if (st.redirect) {
+    h += '<div class="redirect">\u270B Bring your work to your teacher and show them this step. Asking for help is the right move here.</div>' +
+         '<div style="margin-top:9px"><button class="btn ghost" onclick="act(' + qi + ',' + si + ',\'skip\')">Teacher helped \u2014 continue</button></div></div>';
+    return h;
+  }
+  if (step.t === 'choice') {
+    h += '<div class="opts">';
+    step.opts.forEach(function (o, i) {
+      h += '<div class="opt' + (st.sel === i ? ' sel' : '') + '" onclick="act(' + qi + ',' + si + ',\'pick\',' + i + ')">' + esc(o) + '</div>';
+    });
+    h += '</div><button class="btn go" onclick="act(' + qi + ',' + si + ',\'check\')">Check</button>';
+  } else {
+    h += '<div class="row">' + (step.t === 'money' ? '<span class="pfx">$</span>' : '') +
+         '<input type="text" inputmode="decimal" value="' + esc(st.val) + '" placeholder="' +
+         (step.t === 'money' ? '0.00' : 'e.g. 5% or 0.05') + '" ' +
+         'oninput="act(' + qi + ',' + si + ',\'input\',this.value)" ' +
+         'onkeydown="if(event.key===\'Enter\')act(' + qi + ',' + si + ',\'check\')">' +
+         '<button class="btn go" onclick="act(' + qi + ',' + si + ',\'check\')">Check</button></div>' +
+         '<div class="tiny">' + (step.t === 'money'
+            ? 'Dollar sign and commas optional \u2014 1200, 1,200 and $1,200.00 all count.'
+            : 'Either form works \u2014 5% or 0.05.') + '</div>';
+  }
+  if (step.hint) h += '<div style="margin-top:9px"><button class="btn ghost" onclick="act(' + qi + ',' + si + ',\'hint\')">' + (st.hint ? 'Hide hint' : 'Show hint') + '</button></div>';
+  if (st.hint && step.hint) h += '<div class="hint">' + esc(step.hint) + '</div>';
+  if (st.fb) h += '<div class="fb ' + st.fb.t + '">' + (st.fb.t === 'warn' ? '\u26A0 ' : '\u2717 ') + esc(st.fb.m) + '</div>';
+  h += '</div>';
+  return h;
+}
+
+function render() {
+  var m = document.getElementById('main');
+  m.innerHTML = '';
+  var out = '';
+  Q.forEach(function (q, qi) {
+    if (q.part) out += '<div class="part">' + esc(q.part) + '</div>';
+    var s = S[qi];
+    if (!s.done && qi !== active) return;
+    out += '<div class="card' + (s.done ? ' done' : '') + '">';
+    out += '<div class="qn"><span>' + esc(q.num) + '</span>' + (s.done ? '<span class="chk">\u2713 Complete</span>' : '') + '</div>';
+    if (!s.done) {
+      out += '<div class="qp">' + esc(q.prompt) + '</div>';
+      if (q.given) out += q.given;
+    }
+    q.steps.forEach(function (_, si) { out += renderStep(qi, si); });
+    out += '</div>';
+  });
+  if (S.every(function (s) { return s.done; })) {
+    out += '<div class="finale"><h2>\u2713 All seven done</h2><p>The single stock had the best average yearly return and the least money at the end. ' +
+           'A bond pays you whether the market is celebrating or panicking. And a 1% fee is $100 in year one and more every year after. ' +
+           'Diversification is not about being timid \u2014 it is about not needing a specific year to go your way.</p></div>';
+  }
+  m.innerHTML = out;
+
+  var d = document.getElementById('dots');
+  d.innerHTML = '';
+  Q.forEach(function (q, qi) {
+    var e = document.createElement('div');
+    e.className = 'dot' + (S[qi].done ? ' done' : (qi === active ? ' active' : ''));
+    e.textContent = q.num.replace('Q', '');
+    e.onclick = function () { goTo(qi); };
+    d.appendChild(e);
+  });
+}
+render();
+</script>
+</body>
+</html>
