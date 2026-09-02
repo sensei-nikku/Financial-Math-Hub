@@ -35,7 +35,16 @@ body{
   color:var(--ink-deep);
   font-size:15px;
   line-height:1.5;
+  /* Column flex instead of a hardcoded header height. The old rule was
+     main{height:calc(100% - 62px)}, which silently breaks the moment the
+     masthead renders any taller than 62px -- a wrapped title, a zoom
+     level, a different font. When it breaks, the panes stop scrolling
+     internally and the whole PAGE scrolls, which drags the formula bar
+     off the top of the screen. That is the bug students hit. */
+  display:flex;
+  flex-direction:column;
 }
+header{flex:0 0 auto}
 button{font:inherit}
 
 /* ---------- masthead ---------- */
@@ -58,22 +67,58 @@ header .count{margin-left:auto;font-family:var(--mono);font-size:12px;color:#9FC
 
 /* ---------- layout ---------- */
 main{
+  flex:1 1 auto;
+  min-height:0;          /* without this a flex child refuses to shrink,
+                            and its children never get a scrollbar */
   display:grid;
-  grid-template-columns:minmax(320px,400px) 1fr;
+  /* instructions left, sheet right. Wider instruction column than the
+     original: the step bodies now carry the WANT/HAVE/CONNECT/SHAPE
+     reasoning, which needs room to breathe. */
+  grid-template-columns:minmax(360px,46%) 1fr;
   gap:0;
-  height:calc(100% - 62px);
 }
-@media (max-width:860px){
+@media (max-width:1100px){
+  main{grid-template-columns:minmax(320px,44%) 1fr}
+}
+/* Only stack when there is genuinely no room for two columns. */
+@media (max-width:720px){
   main{grid-template-columns:1fr;height:auto}
   #sheetpane{border-left:none;border-top:1px solid var(--rule)}
+  /* Bounding the grid restores internal scrolling, which is what makes
+     the sticky column headers and the sticky formula bar work on a
+     phone the same way they do on a laptop. */
+  #gridwrap{max-height:60vh;padding:10px}
+  /* Fingers are not mouse pointers. */
+  th,td{height:36px}
+  td{padding:6px 9px;font-size:14px}
+  th.rowhead{min-width:34px;max-width:34px}
 }
 
 /* ---------- steps ---------- */
 #steps{
   background:var(--paper);
+  min-height:0;
   overflow-y:auto;
   padding:22px 22px 60px;
   border-right:1px solid var(--rule);
+}
+/* Step bodies carry literal newlines between the four questions, so keep
+   them instead of collapsing the whitespace. */
+.step .body{white-space:pre-line}
+/* The deliverable. Reasoning fades across the lesson; this never does.
+   Students reported the late steps as unclear -- not because the thinking
+   was too hard, but because "what do I actually type, and where" had been
+   faded away along with the scaffolding. Different things. */
+.step .do{
+  margin:12px 0 0;padding:9px 12px;
+  background:var(--paper-2);border-left:3px solid var(--accent);
+  border-radius:0 4px 4px 0;
+  font-size:13.5px;line-height:1.5;color:var(--ink-deep);
+}
+.step .do b{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.step .do .tag{
+  display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:3px;font-weight:700;
 }
 .blurb{
   font-family:var(--serif);font-size:16px;line-height:1.55;
@@ -132,10 +177,16 @@ code,kbd{font-family:var(--mono);font-size:.92em;background:var(--paper-2);
   outline:2px solid var(--accent);outline-offset:2px}
 
 /* ---------- sheet ---------- */
-#sheetpane{display:flex;flex-direction:column;min-width:0;background:var(--paper-2)}
+#sheetpane{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--paper-2)}
 #formulabar{
   display:flex;align-items:stretch;gap:0;
   background:var(--paper);border-bottom:1px solid var(--rule);
+  /* Sticky in every layout. On desktop the grid scrolls inside its own
+     pane so this never moves anyway; on a phone the whole page scrolls
+     and without this the formula bar disappears the moment you scroll
+     down the sheet. */
+  position:sticky;top:0;z-index:6;
+  box-shadow:0 1px 0 var(--rule);
 }
 #addr{
   font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);
@@ -151,7 +202,7 @@ code,kbd{font-family:var(--mono);font-size:.92em;background:var(--paper-2);
   flex:1;border:0;padding:9px 12px;font-family:var(--mono);font-size:14px;
   background:transparent;color:var(--ink-deep);min-width:0;
 }
-#gridwrap{overflow:auto;padding:16px;flex:1}
+#gridwrap{overflow:auto;padding:16px;flex:1 1 auto;min-height:0}
 table{border-collapse:separate;border-spacing:0;background:var(--paper);
   box-shadow:0 1px 0 var(--rule),0 1px 8px rgba(27,58,92,.06)}
 th,td{
@@ -172,7 +223,13 @@ th.rowhead{
 td{
   padding:3px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   cursor:cell;background:var(--paper);
+  touch-action:manipulation;      /* kills the 300ms tap delay */
+  -webkit-tap-highlight-color:transparent;
 }
+/* While you are mid-formula, every cell you could point at lights up,
+   so it is obvious that tapping inserts a reference instead of moving. */
+#sheetpane.picking td:not(.given){cursor:copy;background:#FAFCFE}
+#sheetpane.picking td:not(.given):hover{background:var(--accent-wash,#EAF3FA)}
 td.num{text-align:right}
 td.given{background:var(--paper-2);color:#3C4C5C;cursor:default}
 td.label{text-align:left;color:var(--ink);font-family:var(--sans);font-size:12.5px}
@@ -228,6 +285,7 @@ td.err{background:var(--warn-soft);color:var(--warn)}
       <span id="addr">A1</span>
       <span id="fx">fx</span>
       <input id="input" autocomplete="off" spellcheck="false"
+             autocapitalize="off" autocorrect="off"
              aria-label="Cell contents. Start with = to write a formula.">
     </div>
     <div id="gridwrap" tabindex="0" role="grid" aria-label="Spreadsheet. Arrow keys move between cells. Type to edit."><table id="grid"></table></div>
@@ -239,40 +297,14 @@ td.err{background:var(--warn-soft);color:var(--warn)}
       <span><kbd>Esc</kbd> cancel</span>
       <span><kbd>Delete</kbd> clear</span>
       <span>type <kbd>=</kbd> to start a formula</span>
+      <span>mid-formula, <kbd>click a cell</kbd> to drop in its reference</span>
     </div>
   </section>
 </main>
 
 <script type="module">
 import { Sheet, colName, rcToRef, refToRC, referencedCells } from './engine.js';
-
-/* ---- lesson routing -------------------------------------------------
-   Static imports on purpose: no dynamic import, no top-level await, and
-   a missing file fails loudly at load instead of silently drawing nothing.
-   To add a lesson: one import line, one entry in LESSONS. Each file is a
-   few KB, so loading them all costs nothing measurable.
-   Pick with ?lesson=u3d3 ; the bare URL serves DEFAULT_LESSON.
---------------------------------------------------------------------- */
-import { lesson as u2d3 } from './lesson-u2d3.js';
-import { lesson as u3d1 } from './lesson-u3d1.js';
-import { lesson as u3d2 } from './lesson-u3d2.js';
-import { lesson as u3d3 } from './lesson-u3d3.js';
-
-const LESSONS = { u2d3, u3d1, u3d2, u3d3 };
-const DEFAULT_LESSON = 'u3d3';
-
-const wanted = (new URLSearchParams(location.search).get('lesson') || DEFAULT_LESSON)
-  .toLowerCase().replace(/[^a-z0-9-]/g, '');
-const lesson = LESSONS[wanted];
-
-if (!lesson) {
-  document.body.innerHTML =
-    '<div style="padding:2rem;font:16px/1.5 system-ui;max-width:34rem;margin:0 auto">' +
-    '<h2 style="margin:0 0 .5rem">No walkthrough named &ldquo;' + wanted + '&rdquo;</h2>' +
-    '<p style="margin:0 0 1rem;color:#666">Available: ' + Object.keys(LESSONS).join(', ') + '</p>' +
-    '<p><a href="?lesson=' + DEFAULT_LESSON + '">Open ' + DEFAULT_LESSON + '</a></p></div>';
-  throw new Error('Unknown lesson: ' + wanted);
-}
+import { lesson } from './lesson-u2d3.js';
 
 const sheet = new Sheet(lesson.rows, lesson.cols);
 const given = new Set(Object.keys(lesson.given));
@@ -360,6 +392,7 @@ function setMode(mode) {
   $('sheetpane').classList.toggle('nav', !editing);
   if (editing) $('input').focus();
   else { $('input').blur(); $('gridwrap').focus(); }
+  if (!editing) $('sheetpane').classList.remove('picking');
 }
 
 function select(ref, { edit = false, seed = null } = {}) {
@@ -400,12 +433,55 @@ function moveBy(dr, dc, opts) {
   select(rcToRef(r, c), opts);
 }
 
-$('grid').addEventListener('mousedown', (e) => {
+/* ---- pointing at cells ----
+   pointerdown, not mousedown: one code path for trackpad, touchscreen and
+   stylus. Plenty of Chromebooks are touch devices and mousedown alone is
+   unreliable there.
+
+   Three things can happen when you point at a cell:
+     1. mid-formula  -> insert that cell's reference where the cursor is
+     2. already selected -> open it for editing
+     3. otherwise    -> just select it                                   */
+
+const OPEN_FOR_REF = /[=+\-*/^(,:%<>]\s*$/;
+
+function pickingRef() {
+  if (!editing) return false;
+  const el = $('input');
+  if (el.readOnly || !el.value.startsWith('=')) return false;
+  return OPEN_FOR_REF.test(el.value.slice(0, el.selectionStart));
+}
+
+function insertRef(ref) {
+  const el = $('input');
+  const a = el.selectionStart, b = el.selectionEnd;
+  el.value = el.value.slice(0, a) + ref + el.value.slice(b);
+  const pos = a + ref.length;
+  el.setSelectionRange(pos, pos);
+  el.focus();
+  drawGrid();
+}
+
+function refreshPicking() {
+  $('sheetpane').classList.toggle('picking', pickingRef());
+}
+
+$('grid').addEventListener('pointerdown', (e) => {
   const td = e.target.closest('td');
   if (!td) return;
+  const ref = td.dataset.ref;
+
+  if (pickingRef()) {          // building a formula: point instead of type
+    e.preventDefault();        // keep focus in the input
+    insertRef(ref);
+    return;
+  }
+
   e.preventDefault();
-  select(td.dataset.ref);
+  if (ref === sel && !given.has(ref)) select(ref, { edit: true });
+  else select(ref);
 });
+
 $('grid').addEventListener('dblclick', (e) => {
   const td = e.target.closest('td');
   if (!td || given.has(td.dataset.ref)) return;
@@ -440,7 +516,9 @@ $('gridwrap').addEventListener('keydown', (e) => {
 });
 
 /* ---- editing ---- */
-$('input').addEventListener('input', drawGrid);
+$('input').addEventListener('input', () => { drawGrid(); refreshPicking(); });
+$('input').addEventListener('keyup', refreshPicking);
+$('input').addEventListener('click', refreshPicking);
 $('input').addEventListener('focus', () => setMode('edit'));
 $('input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); commit(); moveBy(1, 0); }
@@ -489,7 +567,14 @@ function drawSteps() {
     el.querySelector('h3').textContent = s.title;
 
     if (i === stepIdx || doneSteps.has(i)) {
-      const p = document.createElement('p'); p.textContent = s.body; el.appendChild(p);
+      const p = document.createElement('p'); p.className = 'body'; p.textContent = s.body; el.appendChild(p);
+      if (s.do) {
+        const dv = document.createElement('div'); dv.className = 'do';
+        const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = 'Your turn';
+        dv.appendChild(tg);
+        dv.appendChild(document.createTextNode(s.do));
+        el.appendChild(dv);
+      }
     }
     if (i === stepIdx) {
       if (shownHints.has(i) && s.hint) {
@@ -540,7 +625,7 @@ function drawSteps() {
     const d = document.createElement('div'); d.id = 'done';
     d.innerHTML = '<h3></h3><p></p>';
     d.querySelector('h3').textContent = lesson.closing.title;
-    d.querySelector('p').textContent = lesson.closing.body;
+    const cp = d.querySelector('p'); cp.style.whiteSpace = 'pre-line'; cp.textContent = lesson.closing.body;
     box.appendChild(d);
   }
   $('h-count').textContent = `${doneSteps.size} of ${lesson.steps.length} steps`;
