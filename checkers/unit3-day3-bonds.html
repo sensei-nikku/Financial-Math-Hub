@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit 3, Day 3 — Bonds &amp; Fund Fees Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-left"><a class="hdr-back" href="../index.html">&larr; All Checkers</a><h1>Bonds &amp; Fund Fees</h1><div class="sub">Unit 3 · Day 3 — Answer Checker</div></div>
+  <div class="hdr-dots" id="hdrDots"></div>
+</header>
+<main class="main" id="main"></main>
+
+<script src="../js/checker-kit.js"></script>
+<script src="../js/tool-money.js"></script>
+<script src="../js/tool-explain.js"></script>
+<script>
+/* Q1–Q3 from the Day 3 handout. Work it on paper first, then check here.
+   Answers live as numbers in this file; the multiple-choice answers live
+   only as djb2 hashes, so they are not readable by a student who opens
+   view-source. */
+
+var PROBLEMS = [
+
+  /* ── Q1 · Terrence's bond ───────────────────────────────────────── */
+  {
+    id: 'q1', num: 'Q1',
+    prompt: 'Terrence buys a bond with a face value of $5,000 and a coupon rate of 4%. He holds it for the full 10-year term.',
+    pipeline: [
+      { tool: 'choice', label: 'Step 1 \u2014 What does the coupon rate apply to?',
+        ask: 'The 4% is a percentage of which number?',
+        options: ['The $5,000 face value',
+                  'Whatever price it last sold for',
+                  'The face value minus the coupon',
+                  'The 4% coupon rate'],
+        ch: 1415047207, shuffle: true,
+        nudge: 'A coupon is always a percentage of face value. That never changes, no matter what the bond later sells for.' },
+
+      { tool: 'currency', label: 'Step 2 \u2014 Interest in one year',
+        ask: 'How much interest does the bond pay Terrence each year?',
+        answer: 200,
+        traps: [ { near: 2000, msg: 'That is ten years of interest. This step asks for one year.' },
+                 { near: 5200, msg: 'That is the face value plus one year of interest. Just the interest here.' } ] },
+
+      { tool: 'currency', label: 'Step 3 \u2014 Interest over the whole term',
+        ask: 'Over the full 10 years, how much interest does he collect in total?',
+        answer: 2000,
+        traps: [ { near: 200, msg: 'That is one year. Multiply by the number of years.' },
+                 { near: 7000, msg: 'That includes the $5,000 coming back. This step is interest only.' } ] },
+
+      { tool: 'currency', label: 'Step 4 \u2014 What he walks away with',
+        ask: 'At the end of the term he also gets the face value back. What does he have in total?',
+        answer: 7000,
+        traps: [ { near: 2000, msg: 'That is the interest alone \u2014 add the face value back in.' },
+                 { near: 5000, msg: 'That is only the money he lent. He kept the interest too.' } ] },
+
+      { tool: 'explain', label: 'Step 5 \u2014 Say what a bond is',
+        ask: 'In your own words: when Terrence owns this bond, who owes him money, and what exactly did they promise?',
+        key: 'The company or government that issued the bond owes him. They promised two separate things: $200 every year for ten years, and the original $5,000 back at the end. Neither promise depends on the stock market, on the company having a good year, or on anyone else wanting to buy the bond. That is the whole difference from owning stock \u2014 a shareholder is owed nothing.' }
+    ]
+  },
+
+  /* ── Q2 · The same bond, resold ─────────────────────────────────── */
+  {
+    id: 'q2', num: 'Q2',
+    prompt: 'Terrence sells the bond to Yvette for $4,000. It still pays the same $200 a year.',
+    pipeline: [
+      { tool: 'percent', label: 'Step 1 \u2014 Yvette\u2019s current yield',
+        ask: 'What percent return is Yvette earning on the $4,000 she actually paid?',
+        answer: 0.05,
+        traps: [ { near: 0.04, msg: 'That is the coupon rate on the original $5,000. Yvette paid less than that \u2014 divide by what SHE paid.' },
+                 { near: 0.0025, msg: 'Check your division. You want the yearly payment over the purchase price.' } ] },
+
+      { tool: 'choice', label: 'Step 2 \u2014 Why her yield is higher',
+        ask: 'Yvette earns 5% where Terrence earned 4% on the very same bond. Why?',
+        options: ['Its price fell, so the same $200 is a bigger share of what she paid',
+                  'The company raised the coupon it pays her',
+                  'She bought more bonds than Terrence did',
+                  'Bond yields are set once and never change'],
+        ch: 3005668253, shuffle: true,
+        nudge: 'The $200 did not change. Only the price someone paid for the right to collect it changed.' },
+
+      { tool: 'explain', label: 'Step 3 \u2014 State the rule',
+        ask: 'Write the relationship as a rule that always holds: when a bond\u2019s price goes ___, its yield goes ___. Then explain why anyone would sell a working bond for less than face value.',
+        key: 'When a bond\u2019s price goes DOWN, its yield goes UP \u2014 always, because the coupon payment is fixed and only the denominator moves. People sell below face value because they need the cash now, or because newly issued bonds are paying more than theirs does, so nobody will pay full price for an older, stingier bond. The seller is not being cheated; the market is repricing a fixed payment.' }
+    ]
+  },
+
+  /* ── Q3 · Two funds, one difference ─────────────────────────────── */
+  {
+    id: 'q3', num: 'Q3',
+    prompt: 'Two funds both return 8% a year before fees. Fund A charges an expense ratio of 0.04%. Fund B charges 1.00%. You put $10,000 in one of them.',
+    pipeline: [
+      { tool: 'percent', label: 'Step 1 \u2014 Fund A after its fee',
+        ask: 'What does Fund A actually return after its expense ratio comes out?',
+        answer: 0.0796,
+        traps: [ { near: 0.08, msg: 'You did not take the fee out. Subtract the expense ratio from the return.' },
+                 { near: 0.07, msg: 'That is Fund B\u2019s after-fee return. Fund A charges 0.04%, not 1.00%.' } ] },
+
+      { tool: 'percent', label: 'Step 2 \u2014 Fund B after its fee',
+        ask: 'And Fund B?',
+        answer: 0.07,
+        traps: [ { near: 0.08, msg: 'You did not take the fee out.' },
+                 { near: 0.0796, msg: 'That is Fund A. Fund B\u2019s fee is 1.00%.' } ] },
+
+      { tool: 'currency', label: 'Step 3 \u2014 Fund A\u2019s fee, year one',
+        ask: 'In dollars, what does Fund A\u2019s fee cost you in the first year on $10,000?',
+        answer: 4,
+        traps: [ { near: 400, msg: 'Watch the decimal. 0.04% is four hundredths of one percent, not 4%.' },
+                 { near: 100, msg: 'That is Fund B\u2019s fee.' } ] },
+
+      { tool: 'currency', label: 'Step 4 \u2014 Fund B\u2019s fee, year one',
+        ask: 'And Fund B\u2019s fee in the first year?',
+        answer: 100,
+        traps: [ { near: 1000, msg: 'Watch the decimal. 1.00% of $10,000.' },
+                 { near: 4, msg: 'That is Fund A\u2019s fee.' } ] },
+
+      { tool: 'currency', label: 'Step 5 \u2014 The gap',
+        ask: 'How much more does Fund B cost you in year one?',
+        answer: 96,
+        traps: [ { near: 104, msg: 'You added the two fees. Find the difference.' } ] },
+
+      { tool: 'choice', label: 'Step 6 \u2014 Why the gap grows',
+        ask: 'That $96 gap does not stay $96. It widens every year. Why?',
+        options: ['The fee is charged on the whole balance, which keeps growing',
+                  'The fee percentage rises every year',
+                  'Fund B stops paying dividends after year one',
+                  'The fee is a flat dollar amount forever'],
+        ch: 48589143, shuffle: true,
+        nudge: 'The percentage never changes. Think about what the percentage is taken from, and what happens to that number over forty years.' },
+
+      { tool: 'explain', label: 'Step 7 \u2014 Say it to a friend',
+        ask: 'A friend says 1% is nothing to worry about. Answer them using a number from this problem.',
+        key: 'One percent is $100 in the first year on $10,000 \u2014 twenty-five times what Fund A charges. But the real damage is that the fee comes out of the balance every year, so it also takes the growth that money would have earned. Over a working life the low-fee fund can end up tens of thousands of dollars ahead on identical returns. The 8% is the same in both funds. The fee is the only difference, and it is the one you get to choose.' }
+    ]
+  }
+];
+
+K.run(PROBLEMS);
+</script>
+</body>
+</html>
