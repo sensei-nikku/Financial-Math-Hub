@@ -1,41 +1,80 @@
 # Financial Math — self-check hub
 
-The Financial Math counterpart to `TEC-Papago-geometry-self-check`. Same layout,
-same stylesheet, same rule: **the hub is static.** No build step, no framework,
-no JS on the landing page.
+The Financial Math counterpart to `TEC-Papago-geometry-self-check`. Same
+stylesheet, same conventions. The hub landing page is static: no build step, no
+framework, no JS on `index.html`.
+
+**This repo is canonical.** Lesson and engine fixes are made here.
 
 ## Files
 
 | path | what it is |
 | --- | --- |
-| `index.html` | The hub. Every lesson in the course, live or greyed out. |
-| `assets/styles.css` | Design system, copied verbatim from the geometry repo. Dark by default; add `data-theme="light"` to `<html>` for warm paper. |
-| `checkers/` | One HTML file per lesson checker. Empty for now. |
-| `js/` | Checker engine and per-primitive tools. Empty for now — see below. |
-| `tests/` | jsdom tests. Empty for now. |
-| `package.json` | jsdom, for the tests. |
+| `index.html` | the hub landing page — cards for every lesson and tool |
+| `walkthrough.html` | the spreadsheet walkthrough; `?lesson=` picks which |
+| `engine.js` | spreadsheet engine |
+| `lesson-u2d3.js`, `lesson-u3d1.js`, `lesson-u3d2.js`, `lesson-u3d3.js` | one per walkthrough |
+| `checkers/unit3-day3-bonds.html` | bond + fund-fee checker |
+| `checkers/unit3-day3-selfcheck.html` | offline Day 3 self check, no dependencies |
+| `js/` | checker kit ported from the geometry repo, plus `tool-money.js` |
+| `tests/money.test.js` | 76 assertions |
+| `assets/styles.css` | hub stylesheet |
+| `package.json` | jsdom, for the tests |
+| `README.md` | this file |
 
-No `.nojekyll` in this archive on purpose — GitHub's web uploader silently skips
-dotfiles, so shipping one would just look like it worked. See below.
+## Rules that have already been broken once
 
-## Setting it up by drag-and-drop
+Read these before moving or overwriting anything here.
 
-Unzip and drag **the contents** into the upload box, not the folder itself —
-dragging the folder gets you a nested `fm-hub/` directory and Pages will serve
-nothing at the root.
+- **`index.html` and `walkthrough.html` are different files with different
+  jobs. Never merge them, and never let one overwrite the other.** `index.html`
+  is the hub the root URL serves; `walkthrough.html` is the spreadsheet tool.
+  Overwriting the hub with the walkthrough drops students straight into a
+  lesson instead of the hub — that has happened twice, both times from an
+  instruction to "upload these files, overwriting `index.html`". Quick check:
 
-### About `.nojekyll`
+  ```bash
+  grep -c "hub-card" index.html        # expect > 0
+  grep -c "gridwrap" index.html        # expect 0
+  grep -c "gridwrap" walkthrough.html  # expect > 0
+  grep -c "hub-card" walkthrough.html  # expect 0
+  ```
 
-You do not need it for this repo as it stands. GitHub Pages runs Jekyll, and
-Jekyll hides paths beginning with `_` or `.` — this repo has none. Nothing here
-contains Liquid syntax either.
+- **`engine.js` and every `lesson-*.js` must stay in the repo root.**
+  `walkthrough.html` imports them with `./` relative paths. Moving them into a
+  subfolder renders a blank page with no visible error — it looks like a
+  caching problem and it is not.
 
-You *will* need it the moment either of those changes, and the most likely
-trigger is porting the checker kit: if any JS file contains `{{` or `{%`, the
-Pages build fails outright rather than degrading. Add it then, via
-**Add file → Create new file**, type `.nojekyll` as the filename, leave the body
-empty, commit. The web editor allows empty files; the uploader is what doesn't.
-Twenty seconds, and it is the only way to get a dotfile in through the browser.
+- **`fm-walkthroughs` is a legacy mirror, not a second source.** It exists only
+  so the QR codes printed on the Unit 3 Day 1–3 student handouts keep
+  resolving. This repo is canonical: fix a lesson here, then copy it across.
+  Retire that repo once no printed packet points at it.
+
+## Adding a lesson
+
+Two lines in `walkthrough.html`: one `import`, and one entry in the `LESSONS`
+map. Nothing else changes. A missing lesson file fails loudly at load and an
+unknown `?lesson=` value renders an error naming the lessons that do exist.
+
+## Routes
+
+    walkthrough.html                 -> Three Portfolios, Same Money (default)
+    walkthrough.html?lesson=u3d1     -> Why Start Early?
+    walkthrough.html?lesson=u3d2     -> What a Share Is Worth
+    walkthrough.html?lesson=u3d3     -> Three Portfolios, Same Money
+    walkthrough.html?lesson=u2d3     -> Jordan's Payoff Network
+
+## `.nojekyll`
+
+Present at the root, and it should stay. GitHub Pages runs Jekyll, and the
+build **fails outright** if any file contains Liquid syntax (`{{` or `{%`) —
+the checker kit in `js/` is the likely future trigger. A failed build keeps
+serving the previous version silently, which is indistinguishable from a cache
+problem.
+
+It cannot be added with GitHub's web uploader, which silently skips dotfiles.
+Use **Add file → Create new file**, type `.nojekyll`, leave the body empty,
+commit.
 
 ## Activating a card
 
@@ -51,20 +90,11 @@ process.
 
 Three card states:
 
-- **plain `hub-card`** — a checker that lives in this repo, under `checkers/`
-- **`hub-ext`** — leaves the repo; the tag renders purple. Walkthroughs and the
-  Apps Script sim are external
+- **plain `hub-card`** — lives in this repo (a checker under `checkers/`, or
+  `walkthrough.html`)
+- **`hub-ext`** — leaves the repo; the tag renders purple. The Apps Script sim
+  is the remaining external one
 - **`hub-soon`** — not built yet; dimmed and unclickable
-
-## What is already live
-
-The spreadsheet walkthroughs live in a separate repo,
-[`fm-walkthroughs`](https://github.com/sensei-nikku/fm-walkthroughs), and are
-linked from here rather than absorbed. That is deliberate: QR codes are already
-printed on student handouts pointing at
-`sensei-nikku.github.io/fm-walkthroughs/`, and moving the files would break
-paper that is already in a filing cabinet. The `?lesson=` parameter selects the
-lesson, so one deployment serves every day.
 
 ## The kit
 
@@ -120,6 +150,9 @@ unanswerable.
 4. **More checkers.** Health insurance (deductible → coinsurance → OOP max) is
    the strongest next candidate — it is pure arithmetic with famous
    misconceptions, which is exactly what `traps` are for.
+5. **Decide on `checkers/u3d3-walkthrough.html`** — a self-contained older copy
+   of the u3d3 walkthrough, superseded by `walkthrough.html?lesson=u3d3` and
+   linked from nowhere. Archive or delete it once confirmed.
 
 ## Conventions worth not breaking
 
